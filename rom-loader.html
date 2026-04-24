@@ -145,10 +145,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   background:rgba(39,174,96,0.45);border:1px solid rgba(46,204,113,0.5);color:rgba(255,255,255,0.8);
 }
 .btn-start:active,.btn-start.on{background:rgba(46,204,113,0.7)}
-/* Button group — center of A/B area */
-.top-btns{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  display:flex;flex-direction:row;gap:10px;pointer-events:auto;
+/* Start/Select — above B and A respectively */
+.btn-sel{
+  bottom:clamp(88px,25vh,126px) !important;left:0 !important;
+}
+.btn-start{
+  bottom:clamp(88px,25vh,126px) !important;right:0 !important;
 }
 
 /* ====== LANDSCAPE HINT ====== */
@@ -241,10 +243,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
       <div class="ab">
         <button class="ab-btn btn-a" data-key="a">A</button>
         <button class="ab-btn btn-b" data-key="b">B</button>
-        <div class="top-btns">
-          <button class="ab-btn btn-sel" data-key="select">SEL</button>
-          <button class="ab-btn btn-start" data-key="start">ST</button>
-        </div>
+        <button class="ab-btn btn-sel" data-key="select">SEL</button>
+        <button class="ab-btn btn-start" data-key="start">ST</button>
       </div>
     </div>
   </div>
