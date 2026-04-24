@@ -145,10 +145,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   background:rgba(39,174,96,0.45);border:1px solid rgba(46,204,113,0.5);color:rgba(255,255,255,0.8);
 }
 .btn-start:active,.btn-start.on{background:rgba(46,204,113,0.7)}
-/* Button group — above A/B */
+/* Button group — inside .ab, above A/B */
 .top-btns{
-  position:absolute;bottom:clamp(84px,24vh,120px);right:max(12px,env(safe-area-inset-right));
-  z-index:45;display:flex;flex-direction:row;gap:8px;pointer-events:auto;
+  position:absolute;top:-38px;right:0;
+  display:flex;flex-direction:row;gap:8px;pointer-events:auto;
 }
 
 /* ====== LANDSCAPE HINT ====== */
@@ -220,6 +220,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   <div class="topbar" id="topbar">
     <button class="back" id="backBtn">◀ MENU</button>
     <div class="info" id="romName"></div>
+    <div style="display:flex;gap:6px">
+      <button class="back" id="saveBtn" style="border-color:rgba(46,204,113,0.5)">💾 SAVE</button>
+      <button class="back" id="loadBtn" style="border-color:rgba(52,152,219,0.5)">📂 LOAD</button>
+    </div>
   </div>
 
   <!-- Touch controls overlay -->
@@ -237,12 +241,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
       <div class="ab">
         <button class="ab-btn btn-a" data-key="a">A</button>
         <button class="ab-btn btn-b" data-key="b">B</button>
+        <div class="top-btns">
+          <button class="ab-btn btn-sel" data-key="select">SEL</button>
+          <button class="ab-btn btn-start" data-key="start">ST</button>
+        </div>
       </div>
-    </div>
-    <!-- Start/Select — top right -->
-    <div class="top-btns">
-      <button class="ab-btn btn-sel" data-key="select">SEL</button>
-      <button class="ab-btn btn-start" data-key="start">ST</button>
     </div>
   </div>
 
@@ -359,6 +362,7 @@ function startEmulator(romData, name) {
   }, 50);
 
   document.getElementById('romName').textContent = name;
+  currentRomName = name;
   saveRecent(name);
 }
 
@@ -430,7 +434,37 @@ var paused = false;
 function togglePause() { paused = !paused; document.getElementById('pause').classList.toggle('show', paused) }
 document.addEventListener('keydown', function(e) {
   if ((e.key === 'p' || e.key === 'Escape') && document.getElementById('shell').classList.contains('active')) togglePause();
+  if (e.key === 's' || e.key === 'S') { if (document.getElementById('shell').classList.contains('active')) { e.preventDefault(); saveState(); showTopbar() } }
+  if (e.key === 'l' || e.key === 'L') { if (document.getElementById('shell').classList.contains('active')) { e.preventDefault(); loadState(); showTopbar() } }
 });
+
+// ================================================================
+//  SAVE / LOAD
+// ================================================================
+var currentRomName = '';
+var SAVE_KEY = 'retro-console-save-';
+
+function saveState() {
+  if (!browser || !browser.nes) { toast('没有运行中的游戏'); return }
+  try {
+    var state = browser.nes.toJSON();
+    var key = SAVE_KEY + currentRomName;
+    localStorage.setItem(key, JSON.stringify(state));
+    toast('💾 已存档', 1500);
+  } catch(e) { toast('存档失败: ' + e.message) }
+}
+
+function loadState() {
+  if (!browser || !browser.nes) { toast('没有运行中的游戏'); return }
+  var key = SAVE_KEY + currentRomName;
+  try {
+    var raw = localStorage.getItem(key);
+    if (!raw) { toast('没有找到存档'); return }
+    var state = JSON.parse(raw);
+    browser.nes.fromJSON(state);
+    toast('📂 已读档', 1500);
+  } catch(e) { toast('读档失败: ' + e.message) }
+}
 
 // ================================================================
 //  INIT
@@ -450,6 +484,8 @@ dz.addEventListener('dragleave', function() { dz.classList.remove('over') });
 dz.addEventListener('drop', function(e) { e.preventDefault(); dz.classList.remove('over'); var f = e.dataTransfer.files[0]; if (f) handleFile(f) });
 document.getElementById('fileInput').addEventListener('change', function(e) { var f = e.target.files[0]; if (f) handleFile(f); this.value = '' });
 
+document.getElementById('saveBtn').addEventListener('click', function() { saveState(); showTopbar() });
+document.getElementById('loadBtn').addEventListener('click', function() { loadState(); showTopbar() });
 document.getElementById('centerTap').addEventListener('click', function() { showTopbar() });
 document.getElementById('backBtn').addEventListener('click', function() {
   if (browser) { try { browser.destroy() } catch(e) {} browser = null }
