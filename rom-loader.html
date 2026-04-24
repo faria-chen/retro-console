@@ -68,9 +68,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 
 /* D-Pad — bottom left */
 .pad-zone{
-  position:absolute;bottom:0;left:0;width:50%;height:60%;
+  position:absolute;bottom:0;left:5%;width:45%;height:60%;
   display:flex;align-items:flex-end;justify-content:flex-start;
-  padding:0 0 max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+  padding:0 0 max(12px,env(safe-area-inset-bottom)) 0;
   pointer-events:none;
 }
 .dp{position:relative;pointer-events:auto}
@@ -97,9 +97,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 
 /* Action Buttons — bottom right */
 .btn-zone{
-  position:absolute;bottom:0;right:0;width:50%;height:60%;
+  position:absolute;bottom:0;right:5%;width:45%;height:60%;
   display:flex;align-items:flex-end;justify-content:flex-end;
-  padding:0 max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) 0;
+  padding:0 0 max(12px,env(safe-area-inset-bottom)) 0;
   pointer-events:none;
 }
 .ab{position:relative;pointer-events:auto}
@@ -145,9 +145,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   background:rgba(39,174,96,0.45);border:1px solid rgba(46,204,113,0.5);color:rgba(255,255,255,0.8);
 }
 .btn-start:active,.btn-start.on{background:rgba(46,204,113,0.7)}
-/* Top-right button group */
+/* Button group — above A/B */
 .top-btns{
-  position:absolute;top:max(10px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));
+  position:absolute;bottom:clamp(84px,24vh,120px);right:max(12px,env(safe-area-inset-right));
   z-index:45;display:flex;flex-direction:row;gap:8px;pointer-events:auto;
 }
 
@@ -473,3 +473,4 @@ document.addEventListener('touchmove', function(e) { e.preventDefault() }, { pas
 </script>
 </body>
 </html>
+
