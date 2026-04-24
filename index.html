@@ -216,7 +216,7 @@ function Snake(){}
 Snake.prototype.init=function(){
   this.grid=16;this.snake=[{x:8,y:8},{x:7,y:8},{x:6,y:8}];
   this.dir={x:1,y:0};this.ndir={x:1,y:0};
-  this.food=this.spawn();this.sc=0;this.spd=110;this.lt=0;this.alive=true;
+  this.food=this.spawn();this.sc=0;this.spd=160;this.lt=0;this.alive=true;
 };
 Snake.prototype.spawn=function(){
   var p,s=this.snake;
@@ -237,7 +237,7 @@ Snake.prototype.update=function(){
     this.alive=false;sfxDie();return;
   }
   this.snake.unshift(h);
-  if(h.x===this.food.x&&h.y===this.food.y){this.sc+=10;sfxEat();this.food=this.spawn();if(this.spd>50)this.spd-=2}
+  if(h.x===this.food.x&&h.y===this.food.y){this.sc+=10;sfxEat();this.food=this.spawn();if(this.spd>90)this.spd-=1}
   else this.snake.pop();
 };
 Snake.prototype.hud=function(){return 'SCORE '+this.sc};
@@ -300,7 +300,7 @@ Tetris.prototype.spawn=function(){
 Tetris.prototype.fits=function(s,px,py){
   for(var r=0;r<s.length;r++)for(var c=0;c<s[r].length;c++){
     if(!s[r][c])continue;var nx=px+c,ny=py+r;
-    if(nx<0||nx>=this.cols||ny>=this.rows)return false;
+    if(nx<0||nx>=this.cols||ny>this.rows)return false;
     if(ny>=0&&this.brd[ny][nx])return false;
   }return true;
 };
