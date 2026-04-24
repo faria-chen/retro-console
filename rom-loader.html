@@ -7,7 +7,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Press Start 2P',monospace}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Press Start 2P',monospace}
 
 /* ====== BOOT ====== */
 #boot{position:fixed;inset:0;z-index:200;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s}
@@ -21,108 +21,166 @@ html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Pr
 #menu{position:fixed;inset:0;z-index:100;background:#111;display:none;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;padding:20px}
 #menu.show{display:flex}
 #menu h2{font-size:0.7rem;color:#9bbc0f;margin-bottom:20px;text-shadow:0 0 10px rgba(155,188,15,0.3)}
-
-/* Drop zone */
-.drop-zone{
-  width:min(90%,420px);min-height:180px;border:3px dashed #333;border-radius:16px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
-  padding:28px 20px;transition:all 0.2s;cursor:pointer;position:relative;
-}
+.drop-zone{width:min(90%,420px);min-height:180px;border:3px dashed #333;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px 20px;transition:all 0.2s;cursor:pointer;position:relative}
 .drop-zone.over{border-color:#9bbc0f;background:rgba(155,188,15,0.06);transform:scale(1.02)}
 .drop-zone .icon{font-size:2.2rem}
 .drop-zone .txt{color:#666;font-size:0.45rem;line-height:2.2;text-align:center}
 .drop-zone .txt b{color:#9bbc0f}
 .drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
-
-/* Hint */
 .hint{width:min(90%,420px);margin-top:16px;padding:12px 14px;background:#1a1a1a;border-radius:8px;border:1px solid #222}
 .hint p{color:#555;font-size:0.35rem;line-height:2}
 .hint kbd{background:#333;color:#9bbc0f;padding:1px 5px;border-radius:3px;font-size:0.3rem}
-
-/* Recent */
 .recent{width:min(90%,420px);margin-top:18px}
 .recent h3{font-size:0.45rem;color:#666;margin-bottom:10px}
 .rom-list{display:flex;flex-direction:column;gap:8px;max-height:160px;overflow-y:auto}
-.rom-item{
-  background:#1a1a1a;border:2px solid #333;border-radius:8px;padding:10px 14px;
-  display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.15s;
-}
+.rom-item{background:#1a1a1a;border:2px solid #333;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.15s}
 .rom-item:active,.rom-item:hover{background:#222;border-color:#9bbc0f;transform:scale(0.98)}
 .rom-item .ri{font-size:1.2rem}
 .rom-item .rn{font-size:0.42rem;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
 .rom-item .rs{font-size:0.32rem;color:#666;margin-top:3px}
 
-/* ====== EMULATOR SHELL ====== */
-#shell{display:none;width:100%;height:100%;flex-direction:column;align-items:center;justify-content:center;background:#111;position:relative}
-#shell.active{display:flex}
+/* ====== GAME SHELL — FULLSCREEN OVERLAY STYLE ====== */
+#shell{display:none;position:fixed;inset:0;z-index:100;background:#000}
+#shell.active{display:block}
 
-.topbar{position:absolute;top:0;left:0;right:0;height:32px;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:rgba(0,0,0,0.9)}
-.topbar .back{color:#888;font-size:0.4rem;cursor:pointer;padding:5px 10px;border:1px solid #444;border-radius:6px;background:none;font-family:inherit}
-.topbar .back:active{background:#333}
-.topbar .info{color:#9bbc0f;font-size:0.35rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65%}
-
-.emu-wrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%;padding:32px 0 4px;overflow:hidden;min-height:0}
-#emu-container{
-  image-rendering:pixelated;image-rendering:crisp-edges;
-  border:3px solid #333;border-radius:4px;background:#000;
-  box-shadow:0 0 20px rgba(0,0,0,0.5);
-  overflow:hidden;
+/* Top bar — auto-fades, tap to show */
+.topbar{
+  position:absolute;top:0;left:0;right:0;height:36px;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 max(12px,env(safe-area-inset-left)) 0 max(12px,env(safe-area-inset-right));
+  background:linear-gradient(to bottom,rgba(0,0,0,0.8),transparent);
+  transition:opacity 0.3s;opacity:0;pointer-events:none;
 }
+.topbar.show{opacity:1;pointer-events:auto}
+.topbar .back{color:#aaa;font-size:0.4rem;cursor:pointer;padding:5px 10px;border:1px solid #555;border-radius:6px;background:rgba(0,0,0,0.5);font-family:inherit}
+.topbar .back:active{background:#333}
+.topbar .info{color:#9bbc0f;font-size:0.35rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;text-shadow:0 1px 3px rgba(0,0,0,0.8)}
+
+/* Canvas — fills entire screen */
+.emu-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:1}
+#emu-container{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
 #emu-container canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 
-/* Touch controls — only on mobile */
-.touch-ctrl{
-  width:100%;display:flex;justify-content:space-between;align-items:center;
-  padding:6px 10px env(safe-area-inset-bottom,10px);flex-shrink:0;
-  min-height:150px;
+/* ====== TOUCH CONTROLS — GAMEPAD OVERLAY ====== */
+.touch-layer{
+  position:absolute;inset:0;z-index:40;pointer-events:none;
+  display:none; /* mobile only */
 }
-@media(min-width:769px){.touch-ctrl{display:none}}
+.touch-layer.active{display:block}
 
-.dp{position:relative;width:140px;height:140px}
-.db{position:absolute;display:flex;align-items:center;justify-content:center;background:#222;border:2px solid #555;color:#888;font-size:1.2rem;cursor:pointer;transition:background 0.05s;border-radius:8px}
-.db:active,.db.on{background:#555;color:#fff}
-.du{top:0;left:42px;width:56px;height:46px;border-radius:10px 10px 4px 4px}
-.dd{bottom:0;left:42px;width:56px;height:46px;border-radius:4px 4px 10px 10px}
-.dl{top:46px;left:0;width:46px;height:48px;border-radius:10px 4px 4px 10px}
-.dr{top:46px;right:0;width:46px;height:48px;border-radius:4px 10px 10px 4px}
-.dc{top:46px;left:46px;width:48px;height:48px;background:#1a1a1a;border:none;pointer-events:none;border-radius:4px}
+/* Left side — D-Pad */
+.pad-zone{
+  position:absolute;bottom:0;left:0;
+  width:45%;height:55%;
+  display:flex;align-items:flex-end;justify-content:flex-start;
+  padding:max(16px,env(safe-area-inset-bottom)) 0 12px max(16px,env(safe-area-inset-left));
+  pointer-events:none;
+}
+.dp{position:relative;width:clamp(110px,28vw,160px);height:clamp(110px,28vw,160px);pointer-events:auto}
+.db{
+  position:absolute;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.25);
+  color:rgba(255,255,255,0.6);font-size:1rem;cursor:pointer;
+  transition:background 0.06s;border-radius:10px;
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+}
+.db:active,.db.on{background:rgba(255,255,255,0.3);color:#fff;border-color:rgba(255,255,255,0.5)}
+/* D-pad layout — cross pattern */
+.du{top:0;left:50%;transform:translateX(-50%);width:42%;height:33%}
+.dd{bottom:0;left:50%;transform:translateX(-50%);width:42%;height:33%}
+.dl{top:50%;left:0;transform:translateY(-50%);width:33%;height:42%}
+.dr{top:50%;right:0;transform:translateY(-50%);width:33%;height:42%}
+.dc{
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  width:34%;height:34%;background:rgba(255,255,255,0.04);
+  border:none;pointer-events:none;border-radius:50%;
+}
+/* Rounded corners on outer edges */
+.du{border-radius:12px 12px 4px 4px}
+.dd{border-radius:4px 4px 12px 12px}
+.dl{border-radius:12px 4px 4px 12px}
+.dr{border-radius:4px 12px 12px 4px}
 
-.ab{display:flex;flex-direction:column;align-items:center;gap:8px}
-.ab-top{display:flex;gap:12px}
-.btn{border:none;font-family:inherit;cursor:pointer;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,0.4);transition:transform 0.05s,box-shadow 0.05s;display:flex;align-items:center;justify-content:center}
-.btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,0.4)}
-.ba{width:56px;height:56px;border-radius:50%;background:#c0392b;font-size:0.6rem}
-.bb{width:56px;height:56px;border-radius:50%;background:#2980b9;font-size:0.6rem}
-.bp{width:80px;height:32px;border-radius:16px;background:#27ae60;font-size:0.35rem}
+/* Right side — Action Buttons */
+.btn-zone{
+  position:absolute;bottom:0;right:0;
+  width:45%;height:55%;
+  display:flex;align-items:flex-end;justify-content:flex-end;
+  padding:max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-right)) 12px 0;
+  pointer-events:none;
+}
+.ab{position:relative;width:clamp(120px,30vw,170px);height:clamp(120px,30vw,170px);pointer-events:auto}
+.ab-btn{
+  position:absolute;border:none;font-family:inherit;cursor:pointer;
+  color:rgba(255,255,255,0.8);font-weight:bold;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform 0.06s;background:rgba(255,255,255,0.12);
+  border:2px solid rgba(255,255,255,0.25);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+}
+.ab-btn:active,.ab-btn.on{transform:scale(0.92);background:rgba(255,255,255,0.3);border-color:rgba(255,255,255,0.5)}
+/* A — big red, right side */
+.btn-a{
+  top:8%;right:0;
+  width:clamp(52px,14vw,72px);height:clamp(52px,14vw,72px);
+  border-radius:50%;font-size:0.7rem;
+  background:rgba(192,57,43,0.5);border-color:rgba(231,76,60,0.6);color:#fff;
+}
+.btn-a:active,.btn-a.on{background:rgba(231,76,60,0.8)}
+/* B — big blue, left side */
+.btn-b{
+  bottom:12%;left:0;
+  width:clamp(52px,14vw,72px);height:clamp(52px,14vw,72px);
+  border-radius:50%;font-size:0.7rem;
+  background:rgba(41,128,185,0.5);border-color:rgba(52,152,219,0.6);color:#fff;
+}
+.btn-b:active,.btn-b.on{background:rgba(52,152,219,0.8)}
+/* Select — small, between A and B */
+.btn-sel{
+  bottom:42%;left:50%;transform:translateX(-50%);
+  width:clamp(40px,10vw,52px);height:clamp(22px,5.5vw,30px);
+  border-radius:14px;font-size:0.3rem;
+  background:rgba(142,68,173,0.4);border-color:rgba(155,89,182,0.5);
+}
+.btn-sel:active,.btn-sel.on{background:rgba(155,89,182,0.7)}
+/* Start — small, above select */
+.btn-start{
+  top:12%;left:50%;transform:translateX(-50%);
+  width:clamp(40px,10vw,52px);height:clamp(22px,5.5vw,30px);
+  border-radius:14px;font-size:0.3rem;
+  background:rgba(39,174,96,0.4);border-color:rgba(46,204,113,0.5);
+}
+.btn-start:active,.btn-start.on{background:rgba(46,204,113,0.7)}
 
-/* Pause */
+/* Center — tap to show topbar */
+.center-zone{
+  position:absolute;top:0;left:30%;right:30%;height:20%;
+  pointer-events:auto;cursor:pointer;z-index:45;
+}
+
+/* ====== LANDSCAPE HINT ====== */
+.rotate-hint{
+  position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.92);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+}
+.rotate-hint.show{display:flex}
+.rotate-hint .icon{font-size:2.5rem;animation:rotate-phone 2s ease-in-out infinite}
+.rotate-hint .txt{color:#888;font-size:0.4rem;text-align:center;line-height:2}
+@keyframes rotate-phone{0%,100%{transform:rotate(0deg)}50%{transform:rotate(90deg)}}
+
+/* ====== PAUSE ====== */
 #pause{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.75)}
 #pause.show{display:flex}
 #pause span{font-size:0.8rem;color:#9bbc0f;animation:blink 1s step-end infinite}
 
 /* Toast */
-.toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:0.38rem;padding:8px 16px;border-radius:8px;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:0.38rem;padding:8px 16px;border-radius:8px;z-index:400;opacity:0;transition:opacity 0.3s;pointer-events:none}
 .toast.show{opacity:1}
 
-@media(max-height:580px){
-  .dp{width:110px;height:110px}
-  .du,.dd{width:44px;height:34px;left:33px}
-  .dl,.dr{width:34px;height:40px;top:34px}
-  .dl{left:0}.dr{right:0}.du{top:0}.dd{bottom:0}
-  .dc{top:34px;left:34px;width:42px;height:42px}
-  .ba,.bb{width:44px;height:44px}
-  .bp{width:64px;height:26px}
-  .touch-ctrl{padding:4px 8px 6px;min-height:120px}
-}
-@media(max-height:480px){
-  .dp{width:100px;height:100px}
-  .du,.dd{width:40px;height:30px;left:30px}
-  .dl,.dr{width:30px;height:36px;top:32px}
-  .dl{left:0}.dr{right:0}.du{top:0}.dd{bottom:0}
-  .dc{top:32px;left:32px;width:36px;height:36px}
-  .ba,.bb{width:40px;height:40px}
-  .bp{width:56px;height:24px}
-  .touch-ctrl{padding:2px 6px 4px;min-height:100px}
+/* ====== DESKTOP — hide touch layer, show keyboard hint ====== */
+@media(min-width:769px){
+  .touch-layer{display:none !important}
+  .rotate-hint{display:none !important}
+  .topbar{opacity:1;pointer-events:auto;background:rgba(0,0,0,0.7)}
 }
 </style>
 </head>
@@ -143,6 +201,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Pr
   </div>
   <div class="hint">
     <p>⌨️ 键盘: <kbd>方向键</kbd>/<kbd>WASD</kbd> 移动, <kbd>X</kbd> A键(跑), <kbd>Z</kbd> B键(跳), <kbd>Enter</kbd> START, <kbd>Ctrl</kbd> SELECT</p>
+    <p>📱 手机: 请横屏使用，虚拟按键覆盖在画面上</p>
     <p>🎮 手柄: 接入后自动识别</p>
   </div>
   <div class="recent" id="recentSection" style="display:none">
@@ -151,30 +210,49 @@ html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Pr
   </div>
 </div>
 
+<!-- Rotate prompt (portrait on mobile) -->
+<div class="rotate-hint" id="rotateHint">
+  <div class="icon">📱</div>
+  <div class="txt">请将手机横屏放置<br>以获得最佳游戏体验</div>
+</div>
+
 <div id="shell">
-  <div class="topbar">
-    <button class="back" id="backBtn">◀ MENU</button>
-    <div class="info" id="romName"></div>
-  </div>
   <div class="emu-wrap">
     <div id="emu-container"></div>
   </div>
-  <div class="touch-ctrl">
-    <div class="dp">
-      <div class="db du" data-key="up">▲</div>
-      <div class="db dd" data-key="down">▼</div>
-      <div class="db dl" data-key="left">◀</div>
-      <div class="db dr" data-key="right">▶</div>
-      <div class="dc"></div>
-    </div>
-    <div class="ab">
-      <div class="ab-top">
-        <button class="btn bb" data-key="b">B</button>
-        <button class="btn ba" data-key="a">A</button>
+
+  <!-- Tap center to show topbar -->
+  <div class="center-zone" id="centerZone"></div>
+
+  <!-- Topbar (hidden by default, tap center to toggle) -->
+  <div class="topbar" id="topbar">
+    <button class="back" id="backBtn">◀ MENU</button>
+    <div class="info" id="romName"></div>
+  </div>
+
+  <!-- Touch controls layer -->
+  <div class="touch-layer" id="touchLayer">
+    <!-- Left: D-Pad -->
+    <div class="pad-zone">
+      <div class="dp">
+        <div class="db du" data-key="up">▲</div>
+        <div class="db dd" data-key="down">▼</div>
+        <div class="db dl" data-key="left">◀</div>
+        <div class="db dr" data-key="right">▶</div>
+        <div class="dc"></div>
       </div>
-      <button class="btn bp" data-key="start">PAUSE</button>
+    </div>
+    <!-- Right: Action Buttons -->
+    <div class="btn-zone">
+      <div class="ab">
+        <button class="ab-btn btn-a" data-key="a">A</button>
+        <button class="ab-btn btn-b" data-key="b">B</button>
+        <button class="ab-btn btn-sel" data-key="select">SEL</button>
+        <button class="ab-btn btn-start" data-key="start">ST</button>
+      </div>
     </div>
   </div>
+
   <div id="pause"><span>⏸ PAUSED</span></div>
 </div>
 
@@ -187,6 +265,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Pr
 // ================================================================
 var browser = null;
 var currentROM = null;
+var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+var topbarTimer = null;
 
 // ================================================================
 //  TOAST
@@ -199,178 +279,148 @@ function toast(msg, dur) {
 }
 
 // ================================================================
-//  AUDIO INIT (must be after user gesture)
+//  AUDIO
 // ================================================================
 var audioReady = false;
 function ensureAudio() {
   if (audioReady) return;
-  // jsnes.Browser handles audio internally via AudioContext
-  // Just need to resume suspended context after user gesture
   try {
     var AC = window.AudioContext || window.webkitAudioContext;
-    if (AC) {
-      var ctx = new AC();
-      if (ctx.state === 'suspended') ctx.resume();
-      ctx.close();
-    }
+    if (AC) { var ctx = new AC(); if (ctx.state === 'suspended') ctx.resume(); ctx.close(); }
   } catch(e) {}
   audioReady = true;
+}
+
+// ================================================================
+//  ORIENTATION
+// ================================================================
+function checkOrientation() {
+  if (!isMobile) return;
+  var rh = document.getElementById('rotateHint');
+  var shell = document.getElementById('shell');
+  if (!shell.classList.contains('active')) { rh.classList.remove('show'); return; }
+  var portrait = window.innerHeight > window.innerWidth;
+  rh.classList.toggle('show', portrait);
+}
+
+function tryLockLandscape() {
+  try {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(function(){});
+    }
+  } catch(e) {}
+}
+
+function unlockOrientation() {
+  try {
+    if (screen.orientation && screen.orientation.unlock) {
+      screen.orientation.unlock();
+    }
+  } catch(e) {}
 }
 
 // ================================================================
 //  FILE HANDLING
 // ================================================================
 function handleFile(file) {
-  if (!file || !file.name.match(/\.nes$/i)) {
-    toast('请选择 .nes 格式的 ROM 文件'); return;
-  }
-  if (file.size > 4 * 1024 * 1024) {
-    toast('文件太大 (>4MB)'); return;
-  }
-  ensureAudio();
-  toast('加载中...');
-
+  if (!file || !file.name.match(/\.nes$/i)) { toast('请选择 .nes 格式的 ROM 文件'); return; }
+  if (file.size > 4 * 1024 * 1024) { toast('文件太大 (>4MB)'); return; }
+  ensureAudio(); toast('加载中...');
   var reader = new FileReader();
-  reader.onload = function(e) {
-    var data = e.target.result;
-    startEmulator(data, file.name);
-  };
+  reader.onload = function(e) { startEmulator(e.target.result, file.name) };
   reader.onerror = function() { toast('读取文件失败') };
   reader.readAsBinaryString(file);
 }
 
 function startEmulator(romData, name) {
-  // Destroy previous instance
-  if (browser) {
-    try { browser.destroy() } catch(e) {}
-    browser = null;
-  }
-
+  if (browser) { try { browser.destroy() } catch(e) {} browser = null; }
   var container = document.getElementById('emu-container');
   container.innerHTML = '';
-
   try {
     browser = new jsnes.Browser({
-      container: container,
-      romData: romData,
-      onError: function(e) {
-        console.error('NES error:', e);
-        toast('模拟器错误: ' + e);
-      }
+      container: container, romData: romData,
+      onError: function(e) { console.error('NES:', e); toast('模拟器错误: ' + e) }
     });
-  } catch(e) {
-    toast('ROM 加载失败: ' + e.message);
-    console.error(e);
-    return;
-  }
+  } catch(e) { toast('ROM 加载失败: ' + e.message); return; }
 
   currentROM = name;
   document.getElementById('romName').textContent = name;
   saveRecent(name);
 
-  // Show shell
   document.getElementById('menu').classList.remove('show');
   document.getElementById('shell').classList.add('active');
+  if (isMobile) document.getElementById('touchLayer').classList.add('active');
+
+  tryLockLandscape();
   resizeEmu();
+  checkOrientation();
+  showTopbar();
 }
 
 function resizeEmu() {
   var container = document.getElementById('emu-container');
   var canvas = container.querySelector('canvas');
   if (!canvas) return;
-  // Reserve space: topbar(32) + padding(8) + touch-ctrl(~160) + safe-area
-  var isMobile = window.innerWidth < 769;
-  var reserve = isMobile ? 210 : 50;
-  var mh = window.innerHeight - reserve;
-  var mw = window.innerWidth - 20;
-  var s = Math.min(mw / 256, mh / 240);
+  // Fill entire screen
+  var s = Math.min(window.innerWidth / 256, window.innerHeight / 240);
   s = Math.max(1, Math.floor(s));
   canvas.style.width = (256 * s) + 'px';
   canvas.style.height = (240 * s) + 'px';
 }
 
 // ================================================================
-//  RECENT ROMs (name only, ROM stored in memory for session)
+//  TOPBAR — auto-hide after 3s, tap center to show
 // ================================================================
-var STORAGE_KEY = 'retro-console-recent';
-var recentROMs = {};  // in-memory cache for current session
-
-function getRecentList() {
-  try {
-    var d = localStorage.getItem(STORAGE_KEY);
-    return d ? JSON.parse(d) : [];
-  } catch(e) { return [] }
+function showTopbar() {
+  var tb = document.getElementById('topbar');
+  tb.classList.add('show');
+  clearTimeout(topbarTimer);
+  topbarTimer = setTimeout(function() { tb.classList.remove('show') }, 3000);
 }
 
+// ================================================================
+//  RECENT ROMs
+// ================================================================
+var STORAGE_KEY = 'retro-console-recent';
+function getRecentList() { try { var d = localStorage.getItem(STORAGE_KEY); return d ? JSON.parse(d) : [] } catch(e) { return [] } }
 function saveRecent(name) {
-  var list = getRecentList();
-  list = list.filter(function(n) { return n !== name });
-  list.unshift(name);
-  if (list.length > 8) list = list.slice(0, 8);
+  var list = getRecentList().filter(function(n) { return n !== name });
+  list.unshift(name); if (list.length > 8) list = list.slice(0, 8);
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)) } catch(e) {}
   renderRecent();
 }
-
 function renderRecent() {
   var list = getRecentList();
   var sec = document.getElementById('recentSection');
   var el = document.getElementById('romList');
-  if (list.length === 0) { sec.style.display = 'none'; return }
-  sec.style.display = 'block';
-  el.innerHTML = '';
+  if (!list.length) { sec.style.display = 'none'; return }
+  sec.style.display = 'block'; el.innerHTML = '';
   list.forEach(function(name) {
     var div = document.createElement('div');
     div.className = 'rom-item';
     div.innerHTML = '<div class="ri">🎮</div><div><div class="rn">' + escHtml(name) + '</div><div class="rs">需要重新选择文件</div></div>';
-    div.addEventListener('click', function() {
-      toast('请通过文件选择器重新加载此 ROM');
-      document.getElementById('fileInput').click();
-    });
+    div.addEventListener('click', function() { document.getElementById('fileInput').click() });
     el.appendChild(div);
   });
 }
-
-function escHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
 
 // ================================================================
-//  CONTROLS — jsnes uses event.keyCode
-//  Default jsnes bindings:
-//    X(88)=A, Z(90)=B, Enter(13)=Start, Ctrl(17)=Select
-//    Arrows(37-40)=D-Pad
-//  We also map WASD as alternatives
+//  CONTROLS
 // ================================================================
 var keyCodeMap = {
   up: 38, down: 40, left: 37, right: 39,
-  a: 88,   // X key → A button
-  b: 90,   // Z key → B button
-  start: 13,  // Enter
-  select: 17  // Ctrl
+  a: 88, b: 90, start: 13, select: 17
 };
-
 function fireKey(type, keyCode) {
-  document.dispatchEvent(new KeyboardEvent(type, {
-    keyCode: keyCode, which: keyCode, key: '', bubbles: true
-  }));
+  document.dispatchEvent(new KeyboardEvent(type, { keyCode: keyCode, which: keyCode, key: '', bubbles: true }));
 }
-
 function bindTouchControls() {
   document.querySelectorAll('[data-key]').forEach(function(el) {
     var k = el.getAttribute('data-key');
-    var kc = keyCodeMap[k];
-    if (!kc) return;
-
-    function dn(e) {
-      e.preventDefault();
-      el.classList.add('on');
-      fireKey('keydown', kc);
-    }
-    function up(e) {
-      e.preventDefault();
-      el.classList.remove('on');
-      fireKey('keyup', kc);
-    }
+    var kc = keyCodeMap[k]; if (!kc) return;
+    function dn(e) { e.preventDefault(); e.stopPropagation(); el.classList.add('on'); fireKey('keydown', kc) }
+    function up(e) { e.preventDefault(); e.stopPropagation(); el.classList.remove('on'); fireKey('keyup', kc) }
     el.addEventListener('touchstart', dn, { passive: false });
     el.addEventListener('touchend', up, { passive: false });
     el.addEventListener('touchcancel', up, { passive: false });
@@ -379,44 +429,22 @@ function bindTouchControls() {
     el.addEventListener('mouseleave', up);
   });
 }
-
-// WASD alternative keyboard mapping → dispatch correct keyCode for jsnes
+// WASD
 var wasdMap = { w: 38, s: 40, a: 37, d: 39 };
-document.addEventListener('keydown', function(e) {
-  var kc = wasdMap[e.key];
-  if (kc !== undefined) {
-    e.preventDefault();
-    fireKey('keydown', kc);
-  }
-});
-document.addEventListener('keyup', function(e) {
-  var kc = wasdMap[e.key];
-  if (kc !== undefined) {
-    e.preventDefault();
-    fireKey('keyup', kc);
-  }
-});
+document.addEventListener('keydown', function(e) { var kc = wasdMap[e.key]; if (kc !== undefined) { e.preventDefault(); fireKey('keydown', kc) } });
+document.addEventListener('keyup', function(e) { var kc = wasdMap[e.key]; if (kc !== undefined) { e.preventDefault(); fireKey('keyup', kc) } });
 
 // ================================================================
-//  PAUSE (jsnes.Browser doesn't have built-in pause, use overlay)
+//  PAUSE
 // ================================================================
 var paused = false;
 function togglePause() {
   paused = !paused;
   document.getElementById('pause').classList.toggle('show', paused);
-  if (browser && browser.nes) {
-    // jsnes doesn't have pause, but we can stop frame loop by toggling
-    // The simplest way: just show overlay, frames keep rendering but game logic won't advance
-    // without input, this is fine
-  }
 }
-
-// Listen for keyboard pause
 document.addEventListener('keydown', function(e) {
   if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
-    if (document.getElementById('shell').classList.contains('active')) {
-      togglePause();
-    }
+    if (document.getElementById('shell').classList.contains('active')) togglePause();
   }
 });
 
@@ -426,10 +454,8 @@ document.addEventListener('keydown', function(e) {
 bindTouchControls();
 renderRecent();
 
-// Boot screen
 document.getElementById('boot').addEventListener('click', function() {
-  ensureAudio();
-  this.classList.add('hide');
+  ensureAudio(); this.classList.add('hide');
   setTimeout(function() { document.getElementById('boot').style.display = 'none' }, 500);
   document.getElementById('menu').classList.add('show');
 });
@@ -438,34 +464,34 @@ document.getElementById('boot').addEventListener('click', function() {
 var dz = document.getElementById('dropZone');
 dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('over') });
 dz.addEventListener('dragleave', function() { dz.classList.remove('over') });
-dz.addEventListener('drop', function(e) {
-  e.preventDefault(); dz.classList.remove('over');
-  var f = e.dataTransfer.files[0]; if (f) handleFile(f);
-});
-document.getElementById('fileInput').addEventListener('change', function(e) {
-  var f = e.target.files[0]; if (f) handleFile(f);
-  this.value = '';
-});
+dz.addEventListener('drop', function(e) { e.preventDefault(); dz.classList.remove('over'); var f = e.dataTransfer.files[0]; if (f) handleFile(f) });
+document.getElementById('fileInput').addEventListener('change', function(e) { var f = e.target.files[0]; if (f) handleFile(f); this.value = '' });
+
+// Center zone tap → show topbar
+document.getElementById('centerZone').addEventListener('click', function(e) { e.stopPropagation(); showTopbar() });
 
 // Back button
 document.getElementById('backBtn').addEventListener('click', function() {
-  if (browser) {
-    try { browser.destroy() } catch(e) {}
-    browser = null;
-  }
+  if (browser) { try { browser.destroy() } catch(e) {} browser = null; }
   paused = false;
   document.getElementById('pause').classList.remove('show');
   document.getElementById('shell').classList.remove('active');
+  document.getElementById('touchLayer').classList.remove('active');
   document.getElementById('emu-container').innerHTML = '';
   document.getElementById('menu').classList.add('show');
+  unlockOrientation();
+  document.getElementById('rotateHint').classList.remove('show');
 });
 
-// Resize
+// Resize & orientation
 window.addEventListener('resize', function() {
-  if (document.getElementById('shell').classList.contains('active')) resizeEmu();
+  if (document.getElementById('shell').classList.contains('active')) { resizeEmu(); checkOrientation() }
+});
+window.addEventListener('orientationchange', function() {
+  setTimeout(function() { if (document.getElementById('shell').classList.contains('active')) { resizeEmu(); checkOrientation() } }, 100);
 });
 
-// Prevent scroll on mobile
+// Prevent scroll
 document.addEventListener('touchmove', function(e) { e.preventDefault() }, { passive: false });
 </script>
 </body>
