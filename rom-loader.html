@@ -128,7 +128,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Pr
     <input type="file" id="fileInput" accept=".nes,.NES" />
   </div>
   <div class="hint">
-    <p>⌨️ 键盘: <kbd>WASD</kbd> / <kbd>方向键</kbd> 移动, <kbd>Z</kbd> / <kbd>J</kbd> A键, <kbd>X</kbd> / <kbd>K</kbd> B键, <kbd>Enter</kbd> START, <kbd>Shift</kbd> SELECT</p>
+    <p>⌨️ 键盘: <kbd>方向键</kbd>/<kbd>WASD</kbd> 移动, <kbd>X</kbd> A键(跑), <kbd>Z</kbd> B键(跳), <kbd>Enter</kbd> START, <kbd>Ctrl</kbd> SELECT</p>
     <p>🎮 手柄: 接入后自动识别</p>
   </div>
   <div class="recent" id="recentSection" style="display:none">
@@ -318,28 +318,41 @@ function escHtml(s) {
 }
 
 // ================================================================
-//  TOUCH CONTROLS (bridge to jsnes.Browser keyboard events)
+//  CONTROLS — jsnes uses event.keyCode
+//  Default jsnes bindings:
+//    X(88)=A, Z(90)=B, Enter(13)=Start, Ctrl(17)=Select
+//    Arrows(37-40)=D-Pad
+//  We also map WASD as alternatives
 // ================================================================
-var keyMap = {
-  up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
-  a: 'z', b: 'x', start: 'Enter', select: 'Shift'
+var keyCodeMap = {
+  up: 38, down: 40, left: 37, right: 39,
+  a: 88,   // X key → A button
+  b: 90,   // Z key → B button
+  start: 13,  // Enter
+  select: 17  // Ctrl
 };
+
+function fireKey(type, keyCode) {
+  document.dispatchEvent(new KeyboardEvent(type, {
+    keyCode: keyCode, which: keyCode, key: '', bubbles: true
+  }));
+}
 
 function bindTouchControls() {
   document.querySelectorAll('[data-key]').forEach(function(el) {
     var k = el.getAttribute('data-key');
-    var key = keyMap[k];
-    if (!key) return;
+    var kc = keyCodeMap[k];
+    if (!kc) return;
 
     function dn(e) {
       e.preventDefault();
       el.classList.add('on');
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: key, bubbles: true }));
+      fireKey('keydown', kc);
     }
     function up(e) {
       e.preventDefault();
       el.classList.remove('on');
-      document.dispatchEvent(new KeyboardEvent('keyup', { key: key, bubbles: true }));
+      fireKey('keyup', kc);
     }
     el.addEventListener('touchstart', dn, { passive: false });
     el.addEventListener('touchend', up, { passive: false });
@@ -349,6 +362,23 @@ function bindTouchControls() {
     el.addEventListener('mouseleave', up);
   });
 }
+
+// WASD alternative keyboard mapping → dispatch correct keyCode for jsnes
+var wasdMap = { w: 38, s: 40, a: 37, d: 39 };
+document.addEventListener('keydown', function(e) {
+  var kc = wasdMap[e.key];
+  if (kc !== undefined) {
+    e.preventDefault();
+    fireKey('keydown', kc);
+  }
+});
+document.addEventListener('keyup', function(e) {
+  var kc = wasdMap[e.key];
+  if (kc !== undefined) {
+    e.preventDefault();
+    fireKey('keyup', kc);
+  }
+});
 
 // ================================================================
 //  PAUSE (jsnes.Browser doesn't have built-in pause, use overlay)
