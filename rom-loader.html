@@ -39,123 +39,114 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 .rom-item .rn{font-size:0.42rem;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
 .rom-item .rs{font-size:0.32rem;color:#666;margin-top:3px}
 
-/* ====== GAME SHELL — FULLSCREEN OVERLAY STYLE ====== */
+/* ====== GAME SHELL — TRUE FULLSCREEN ====== */
 #shell{display:none;position:fixed;inset:0;z-index:100;background:#000}
 #shell.active{display:block}
 
-/* Top bar — auto-fades, tap to show */
+/* Canvas fills entire viewport */
+#emu-container{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#emu-container canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* Top bar — fades in/out */
 .topbar{
-  position:absolute;top:0;left:0;right:0;height:36px;z-index:50;
+  position:absolute;top:0;left:0;right:0;height:40px;z-index:50;
   display:flex;align-items:center;justify-content:space-between;
   padding:0 max(12px,env(safe-area-inset-left)) 0 max(12px,env(safe-area-inset-right));
-  background:linear-gradient(to bottom,rgba(0,0,0,0.8),transparent);
+  background:linear-gradient(to bottom,rgba(0,0,0,0.85),transparent);
   transition:opacity 0.3s;opacity:0;pointer-events:none;
 }
 .topbar.show{opacity:1;pointer-events:auto}
-.topbar .back{color:#aaa;font-size:0.4rem;cursor:pointer;padding:5px 10px;border:1px solid #555;border-radius:6px;background:rgba(0,0,0,0.5);font-family:inherit}
-.topbar .back:active{background:#333}
-.topbar .info{color:#9bbc0f;font-size:0.35rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;text-shadow:0 1px 3px rgba(0,0,0,0.8)}
+.topbar .back{color:#ccc;font-size:0.4rem;cursor:pointer;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;background:rgba(0,0,0,0.4);font-family:inherit}
+.topbar .back:active{background:rgba(255,255,255,0.15)}
+.topbar .info{color:#9bbc0f;font-size:0.35rem;text-shadow:0 1px 4px rgba(0,0,0,0.9);max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* Canvas — fills entire screen */
-.emu-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:1}
-#emu-container{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
-#emu-container canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+/* Center tap zone to show topbar */
+.center-tap{position:absolute;top:0;left:25%;right:25%;height:15%;z-index:45;pointer-events:auto;cursor:pointer}
 
-/* ====== TOUCH CONTROLS — GAMEPAD OVERLAY ====== */
-.touch-layer{
-  position:absolute;inset:0;z-index:40;pointer-events:none;
-  display:none; /* mobile only */
-}
-.touch-layer.active{display:block}
+/* ====== TOUCH CONTROLS — OVERLAY GAMEPAD ====== */
+.touch-layer{position:absolute;inset:0;z-index:40;pointer-events:none}
 
-/* Left side — D-Pad */
+/* D-Pad — bottom left */
 .pad-zone{
-  position:absolute;bottom:0;left:0;
-  width:45%;height:55%;
+  position:absolute;bottom:0;left:0;width:50%;height:60%;
   display:flex;align-items:flex-end;justify-content:flex-start;
-  padding:max(16px,env(safe-area-inset-bottom)) 0 12px max(16px,env(safe-area-inset-left));
+  padding:0 0 max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
   pointer-events:none;
 }
-.dp{position:relative;width:clamp(110px,28vw,160px);height:clamp(110px,28vw,160px);pointer-events:auto}
+.dp{position:relative;pointer-events:auto}
+/* Size relative to viewport height */
+@media(orientation:landscape){
+  .dp{width:min(32vh,180px);height:min(32vh,180px)}
+}
+@media(orientation:portrait){
+  .dp{width:min(35vw,180px);height:min(35vw,180px)}
+}
 .db{
   position:absolute;display:flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.25);
-  color:rgba(255,255,255,0.6);font-size:1rem;cursor:pointer;
-  transition:background 0.06s;border-radius:10px;
-  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);
+  color:rgba(255,255,255,0.5);font-size:clamp(0.8rem,2.5vh,1.2rem);
+  cursor:pointer;transition:background 0.06s;
+  backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
 }
 .db:active,.db.on{background:rgba(255,255,255,0.3);color:#fff;border-color:rgba(255,255,255,0.5)}
-/* D-pad layout — cross pattern */
-.du{top:0;left:50%;transform:translateX(-50%);width:42%;height:33%}
-.dd{bottom:0;left:50%;transform:translateX(-50%);width:42%;height:33%}
-.dl{top:50%;left:0;transform:translateY(-50%);width:33%;height:42%}
-.dr{top:50%;right:0;transform:translateY(-50%);width:33%;height:42%}
-.dc{
-  top:50%;left:50%;transform:translate(-50%,-50%);
-  width:34%;height:34%;background:rgba(255,255,255,0.04);
-  border:none;pointer-events:none;border-radius:50%;
-}
-/* Rounded corners on outer edges */
-.du{border-radius:12px 12px 4px 4px}
-.dd{border-radius:4px 4px 12px 12px}
-.dl{border-radius:12px 4px 4px 12px}
-.dr{border-radius:4px 12px 12px 4px}
+.du{top:0;left:50%;transform:translateX(-50%);width:40%;height:34%;border-radius:14px 14px 6px 6px}
+.dd{bottom:0;left:50%;transform:translateX(-50%);width:40%;height:34%;border-radius:6px 6px 14px 14px}
+.dl{top:50%;left:0;transform:translateY(-50%);width:34%;height:40%;border-radius:14px 6px 6px 14px}
+.dr{top:50%;right:0;transform:translateY(-50%);width:34%;height:40%;border-radius:6px 14px 14px 6px}
+.dc{top:50%;left:50%;transform:translate(-50%,-50%);width:32%;height:32%;background:rgba(255,255,255,0.03);border:none;pointer-events:none;border-radius:50%}
 
-/* Right side — Action Buttons */
+/* Action Buttons — bottom right */
 .btn-zone{
-  position:absolute;bottom:0;right:0;
-  width:45%;height:55%;
+  position:absolute;bottom:0;right:0;width:50%;height:60%;
   display:flex;align-items:flex-end;justify-content:flex-end;
-  padding:max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-right)) 12px 0;
+  padding:0 max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) 0;
   pointer-events:none;
 }
-.ab{position:relative;width:clamp(120px,30vw,170px);height:clamp(120px,30vw,170px);pointer-events:auto}
+.ab{position:relative;pointer-events:auto}
+@media(orientation:landscape){
+  .ab{width:min(34vh,190px);height:min(34vh,190px)}
+}
+@media(orientation:portrait){
+  .ab{width:min(38vw,190px);height:min(38vw,190px)}
+}
 .ab-btn{
   position:absolute;border:none;font-family:inherit;cursor:pointer;
-  color:rgba(255,255,255,0.8);font-weight:bold;
   display:flex;align-items:center;justify-content:center;
-  transition:transform 0.06s;background:rgba(255,255,255,0.12);
-  border:2px solid rgba(255,255,255,0.25);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  transition:transform 0.06s;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
 }
-.ab-btn:active,.ab-btn.on{transform:scale(0.92);background:rgba(255,255,255,0.3);border-color:rgba(255,255,255,0.5)}
-/* A — big red, right side */
+.ab-btn:active,.ab-btn.on{transform:scale(0.9)}
+/* A — big red, top-right */
 .btn-a{
-  top:8%;right:0;
-  width:clamp(52px,14vw,72px);height:clamp(52px,14vw,72px);
-  border-radius:50%;font-size:0.7rem;
-  background:rgba(192,57,43,0.5);border-color:rgba(231,76,60,0.6);color:#fff;
+  top:0;right:0;
+  width:clamp(50px,14vh,72px);height:clamp(50px,14vh,72px);
+  border-radius:50%;font-size:0.7rem;font-weight:bold;
+  background:rgba(192,57,43,0.45);border:2px solid rgba(231,76,60,0.5);color:rgba(255,255,255,0.85);
 }
-.btn-a:active,.btn-a.on{background:rgba(231,76,60,0.8)}
-/* B — big blue, left side */
+.btn-a:active,.btn-a.on{background:rgba(231,76,60,0.8);color:#fff}
+/* B — big blue, bottom-left */
 .btn-b{
-  bottom:12%;left:0;
-  width:clamp(52px,14vw,72px);height:clamp(52px,14vw,72px);
-  border-radius:50%;font-size:0.7rem;
-  background:rgba(41,128,185,0.5);border-color:rgba(52,152,219,0.6);color:#fff;
+  bottom:8%;left:0;
+  width:clamp(50px,14vh,72px);height:clamp(50px,14vh,72px);
+  border-radius:50%;font-size:0.7rem;font-weight:bold;
+  background:rgba(41,128,185,0.45);border:2px solid rgba(52,152,219,0.5);color:rgba(255,255,255,0.85);
 }
-.btn-b:active,.btn-b.on{background:rgba(52,152,219,0.8)}
-/* Select — small, between A and B */
+.btn-b:active,.btn-b.on{background:rgba(52,152,219,0.8);color:#fff}
+/* Select — small pill */
 .btn-sel{
-  bottom:42%;left:50%;transform:translateX(-50%);
-  width:clamp(40px,10vw,52px);height:clamp(22px,5.5vw,30px);
-  border-radius:14px;font-size:0.3rem;
-  background:rgba(142,68,173,0.4);border-color:rgba(155,89,182,0.5);
+  bottom:50%;left:50%;transform:translate(-50%,50%);
+  width:clamp(38px,10vw,52px);height:clamp(20px,5vh,28px);
+  border-radius:14px;font-size:0.28rem;
+  background:rgba(142,68,173,0.4);border:1px solid rgba(155,89,182,0.4);color:rgba(255,255,255,0.7);
 }
 .btn-sel:active,.btn-sel.on{background:rgba(155,89,182,0.7)}
-/* Start — small, above select */
+/* Start — small pill */
 .btn-start{
-  top:12%;left:50%;transform:translateX(-50%);
-  width:clamp(40px,10vw,52px);height:clamp(22px,5.5vw,30px);
-  border-radius:14px;font-size:0.3rem;
-  background:rgba(39,174,96,0.4);border-color:rgba(46,204,113,0.5);
+  top:15%;left:50%;transform:translateX(-50%);
+  width:clamp(38px,10vw,52px);height:clamp(20px,5vh,28px);
+  border-radius:14px;font-size:0.28rem;
+  background:rgba(39,174,96,0.4);border:1px solid rgba(46,204,113,0.4);color:rgba(255,255,255,0.7);
 }
 .btn-start:active,.btn-start.on{background:rgba(46,204,113,0.7)}
-
-/* Center — tap to show topbar */
-.center-zone{
-  position:absolute;top:0;left:30%;right:30%;height:20%;
-  pointer-events:auto;cursor:pointer;z-index:45;
-}
 
 /* ====== LANDSCAPE HINT ====== */
 .rotate-hint{
@@ -163,9 +154,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;
 }
 .rotate-hint.show{display:flex}
-.rotate-hint .icon{font-size:2.5rem;animation:rotate-phone 2s ease-in-out infinite}
+.rotate-hint .icon{font-size:2.5rem;animation:rot-phone 2s ease-in-out infinite}
 .rotate-hint .txt{color:#888;font-size:0.4rem;text-align:center;line-height:2}
-@keyframes rotate-phone{0%,100%{transform:rotate(0deg)}50%{transform:rotate(90deg)}}
+@keyframes rot-phone{0%,100%{transform:rotate(0deg)}50%{transform:rotate(90deg)}}
 
 /* ====== PAUSE ====== */
 #pause{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.75)}
@@ -173,11 +164,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 #pause span{font-size:0.8rem;color:#9bbc0f;animation:blink 1s step-end infinite}
 
 /* Toast */
-.toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:0.38rem;padding:8px 16px;border-radius:8px;z-index:400;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:rgba(50,50,50,0.95);color:#fff;font-size:0.38rem;padding:8px 16px;border-radius:8px;z-index:400;opacity:0;transition:opacity 0.3s;pointer-events:none}
 .toast.show{opacity:1}
 
-/* ====== DESKTOP — hide touch layer, show keyboard hint ====== */
-@media(min-width:769px){
+/* ====== DESKTOP OVERRIDES ====== */
+@media(min-width:769px) and (hover:hover){
   .touch-layer{display:none !important}
   .rotate-hint{display:none !important}
   .topbar{opacity:1;pointer-events:auto;background:rgba(0,0,0,0.7)}
@@ -201,7 +192,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   </div>
   <div class="hint">
     <p>⌨️ 键盘: <kbd>方向键</kbd>/<kbd>WASD</kbd> 移动, <kbd>X</kbd> A键(跑), <kbd>Z</kbd> B键(跳), <kbd>Enter</kbd> START, <kbd>Ctrl</kbd> SELECT</p>
-    <p>📱 手机: 请横屏使用，虚拟按键覆盖在画面上</p>
+    <p>📱 手机: 请横屏使用，虚拟按键在画面底部两侧</p>
     <p>🎮 手柄: 接入后自动识别</p>
   </div>
   <div class="recent" id="recentSection" style="display:none">
@@ -210,29 +201,26 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   </div>
 </div>
 
-<!-- Rotate prompt (portrait on mobile) -->
 <div class="rotate-hint" id="rotateHint">
   <div class="icon">📱</div>
   <div class="txt">请将手机横屏放置<br>以获得最佳游戏体验</div>
 </div>
 
 <div id="shell">
-  <div class="emu-wrap">
-    <div id="emu-container"></div>
-  </div>
+  <!-- Canvas container — absolutely fullscreen -->
+  <div id="emu-container"></div>
 
-  <!-- Tap center to show topbar -->
-  <div class="center-zone" id="centerZone"></div>
+  <!-- Tap zone to show topbar -->
+  <div class="center-tap" id="centerTap"></div>
 
-  <!-- Topbar (hidden by default, tap center to toggle) -->
+  <!-- Topbar -->
   <div class="topbar" id="topbar">
     <button class="back" id="backBtn">◀ MENU</button>
     <div class="info" id="romName"></div>
   </div>
 
-  <!-- Touch controls layer -->
+  <!-- Touch controls overlay -->
   <div class="touch-layer" id="touchLayer">
-    <!-- Left: D-Pad -->
     <div class="pad-zone">
       <div class="dp">
         <div class="db du" data-key="up">▲</div>
@@ -242,7 +230,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
         <div class="dc"></div>
       </div>
     </div>
-    <!-- Right: Action Buttons -->
     <div class="btn-zone">
       <div class="ab">
         <button class="ab-btn btn-a" data-key="a">A</button>
@@ -264,8 +251,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 //  STATE
 // ================================================================
 var browser = null;
-var currentROM = null;
-var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 var topbarTimer = null;
 
 // ================================================================
@@ -284,92 +269,95 @@ function toast(msg, dur) {
 var audioReady = false;
 function ensureAudio() {
   if (audioReady) return;
-  try {
-    var AC = window.AudioContext || window.webkitAudioContext;
-    if (AC) { var ctx = new AC(); if (ctx.state === 'suspended') ctx.resume(); ctx.close(); }
-  } catch(e) {}
+  try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) { var c = new AC(); if (c.state === 'suspended') c.resume(); c.close() } } catch(e) {}
   audioReady = true;
 }
 
 // ================================================================
 //  ORIENTATION
 // ================================================================
+function isPortrait() { return window.innerHeight > window.innerWidth }
 function checkOrientation() {
-  if (!isMobile) return;
   var rh = document.getElementById('rotateHint');
   var shell = document.getElementById('shell');
-  if (!shell.classList.contains('active')) { rh.classList.remove('show'); return; }
-  var portrait = window.innerHeight > window.innerWidth;
-  rh.classList.toggle('show', portrait);
+  // Only show rotate hint on mobile/touch devices in portrait during gameplay
+  var isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  if (!shell.classList.contains('active') || !isTouchDevice) { rh.classList.remove('show'); return }
+  rh.classList.toggle('show', isPortrait());
 }
-
 function tryLockLandscape() {
-  try {
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape').catch(function(){});
-    }
-  } catch(e) {}
+  try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function(){}) } catch(e) {}
+}
+function unlockOrientation() {
+  try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock() } catch(e) {}
 }
 
-function unlockOrientation() {
-  try {
-    if (screen.orientation && screen.orientation.unlock) {
-      screen.orientation.unlock();
-    }
-  } catch(e) {}
+// ================================================================
+//  RESIZE — force canvas to fill viewport after jsnes init
+// ================================================================
+function resizeEmu() {
+  var container = document.getElementById('emu-container');
+  var canvas = container.querySelector('canvas');
+  if (!canvas) return;
+  var vw = window.innerWidth;
+  var vh = window.innerHeight;
+  var scale = Math.min(vw / 256, vh / 240);
+  // Use fractional scale for pixel-perfect fit
+  canvas.style.width = Math.floor(256 * scale) + 'px';
+  canvas.style.height = Math.floor(240 * scale) + 'px';
 }
 
 // ================================================================
 //  FILE HANDLING
 // ================================================================
 function handleFile(file) {
-  if (!file || !file.name.match(/\.nes$/i)) { toast('请选择 .nes 格式的 ROM 文件'); return; }
-  if (file.size > 4 * 1024 * 1024) { toast('文件太大 (>4MB)'); return; }
+  if (!file || !file.name.match(/\.nes$/i)) { toast('请选择 .nes ROM 文件'); return }
+  if (file.size > 4 * 1024 * 1024) { toast('文件太大'); return }
   ensureAudio(); toast('加载中...');
   var reader = new FileReader();
   reader.onload = function(e) { startEmulator(e.target.result, file.name) };
-  reader.onerror = function() { toast('读取文件失败') };
+  reader.onerror = function() { toast('读取失败') };
   reader.readAsBinaryString(file);
 }
 
 function startEmulator(romData, name) {
-  if (browser) { try { browser.destroy() } catch(e) {} browser = null; }
+  // Clean up previous
+  if (browser) { try { browser.destroy() } catch(e) {} browser = null }
+
   var container = document.getElementById('emu-container');
   container.innerHTML = '';
-  try {
-    browser = new jsnes.Browser({
-      container: container, romData: romData,
-      onError: function(e) { console.error('NES:', e); toast('模拟器错误: ' + e) }
-    });
-  } catch(e) { toast('ROM 加载失败: ' + e.message); return; }
 
-  currentROM = name;
-  document.getElementById('romName').textContent = name;
-  saveRecent(name);
-
+  // IMPORTANT: Make shell visible FIRST so container has dimensions
   document.getElementById('menu').classList.remove('show');
   document.getElementById('shell').classList.add('active');
-  if (isMobile) document.getElementById('touchLayer').classList.add('active');
 
-  tryLockLandscape();
-  resizeEmu();
-  checkOrientation();
-  showTopbar();
-}
+  // Show touch layer on touch devices
+  var isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  var tl = document.getElementById('touchLayer');
+  if (isTouchDevice) { tl.style.display = 'block' } else { tl.style.display = 'none' }
 
-function resizeEmu() {
-  var container = document.getElementById('emu-container');
-  var canvas = container.querySelector('canvas');
-  if (!canvas) return;
-  // Fill entire screen
-  var s = Math.min(window.innerWidth / 256, window.innerHeight / 240);
-  s = Math.max(1, Math.floor(s));
-  canvas.style.width = (256 * s) + 'px';
-  canvas.style.height = (240 * s) + 'px';
+  // Small delay to let layout settle, then init jsnes
+  setTimeout(function() {
+    try {
+      browser = new jsnes.Browser({
+        container: container, romData: romData,
+        onError: function(e) { console.error('NES:', e); toast('模拟器错误') }
+      });
+    } catch(e) { toast('ROM 加载失败: ' + e.message); return }
+
+    // Force resize after jsnes sets up canvas
+    resizeEmu();
+    tryLockLandscape();
+    checkOrientation();
+    showTopbar();
+  }, 50);
+
+  document.getElementById('romName').textContent = name;
+  saveRecent(name);
 }
 
 // ================================================================
-//  TOPBAR — auto-hide after 3s, tap center to show
+//  TOPBAR
 // ================================================================
 function showTopbar() {
   var tb = document.getElementById('topbar');
@@ -382,7 +370,7 @@ function showTopbar() {
 //  RECENT ROMs
 // ================================================================
 var STORAGE_KEY = 'retro-console-recent';
-function getRecentList() { try { var d = localStorage.getItem(STORAGE_KEY); return d ? JSON.parse(d) : [] } catch(e) { return [] } }
+function getRecentList() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [] } catch(e) { return [] } }
 function saveRecent(name) {
   var list = getRecentList().filter(function(n) { return n !== name });
   list.unshift(name); if (list.length > 8) list = list.slice(0, 8);
@@ -398,22 +386,19 @@ function renderRecent() {
   list.forEach(function(name) {
     var div = document.createElement('div');
     div.className = 'rom-item';
-    div.innerHTML = '<div class="ri">🎮</div><div><div class="rn">' + escHtml(name) + '</div><div class="rs">需要重新选择文件</div></div>';
+    div.innerHTML = '<div class="ri">🎮</div><div><div class="rn">' + esc(name) + '</div><div class="rs">重新选择文件加载</div></div>';
     div.addEventListener('click', function() { document.getElementById('fileInput').click() });
     el.appendChild(div);
   });
 }
-function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
 
 // ================================================================
 //  CONTROLS
 // ================================================================
-var keyCodeMap = {
-  up: 38, down: 40, left: 37, right: 39,
-  a: 88, b: 90, start: 13, select: 17
-};
-function fireKey(type, keyCode) {
-  document.dispatchEvent(new KeyboardEvent(type, { keyCode: keyCode, which: keyCode, key: '', bubbles: true }));
+var keyCodeMap = { up: 38, down: 40, left: 37, right: 39, a: 88, b: 90, start: 13, select: 17 };
+function fireKey(type, kc) {
+  document.dispatchEvent(new KeyboardEvent(type, { keyCode: kc, which: kc, key: '', bubbles: true }));
 }
 function bindTouchControls() {
   document.querySelectorAll('[data-key]').forEach(function(el) {
@@ -434,18 +419,11 @@ var wasdMap = { w: 38, s: 40, a: 37, d: 39 };
 document.addEventListener('keydown', function(e) { var kc = wasdMap[e.key]; if (kc !== undefined) { e.preventDefault(); fireKey('keydown', kc) } });
 document.addEventListener('keyup', function(e) { var kc = wasdMap[e.key]; if (kc !== undefined) { e.preventDefault(); fireKey('keyup', kc) } });
 
-// ================================================================
-//  PAUSE
-// ================================================================
+// Pause
 var paused = false;
-function togglePause() {
-  paused = !paused;
-  document.getElementById('pause').classList.toggle('show', paused);
-}
+function togglePause() { paused = !paused; document.getElementById('pause').classList.toggle('show', paused) }
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
-    if (document.getElementById('shell').classList.contains('active')) togglePause();
-  }
+  if ((e.key === 'p' || e.key === 'Escape') && document.getElementById('shell').classList.contains('active')) togglePause();
 });
 
 // ================================================================
@@ -460,38 +438,31 @@ document.getElementById('boot').addEventListener('click', function() {
   document.getElementById('menu').classList.add('show');
 });
 
-// Drop zone
 var dz = document.getElementById('dropZone');
 dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('over') });
 dz.addEventListener('dragleave', function() { dz.classList.remove('over') });
 dz.addEventListener('drop', function(e) { e.preventDefault(); dz.classList.remove('over'); var f = e.dataTransfer.files[0]; if (f) handleFile(f) });
 document.getElementById('fileInput').addEventListener('change', function(e) { var f = e.target.files[0]; if (f) handleFile(f); this.value = '' });
 
-// Center zone tap → show topbar
-document.getElementById('centerZone').addEventListener('click', function(e) { e.stopPropagation(); showTopbar() });
-
-// Back button
+document.getElementById('centerTap').addEventListener('click', function() { showTopbar() });
 document.getElementById('backBtn').addEventListener('click', function() {
-  if (browser) { try { browser.destroy() } catch(e) {} browser = null; }
+  if (browser) { try { browser.destroy() } catch(e) {} browser = null }
   paused = false;
   document.getElementById('pause').classList.remove('show');
   document.getElementById('shell').classList.remove('active');
-  document.getElementById('touchLayer').classList.remove('active');
   document.getElementById('emu-container').innerHTML = '';
   document.getElementById('menu').classList.add('show');
   unlockOrientation();
   document.getElementById('rotateHint').classList.remove('show');
 });
 
-// Resize & orientation
 window.addEventListener('resize', function() {
   if (document.getElementById('shell').classList.contains('active')) { resizeEmu(); checkOrientation() }
 });
 window.addEventListener('orientationchange', function() {
-  setTimeout(function() { if (document.getElementById('shell').classList.contains('active')) { resizeEmu(); checkOrientation() } }, 100);
+  setTimeout(function() { resizeEmu(); checkOrientation() }, 150);
 });
 
-// Prevent scroll
 document.addEventListener('touchmove', function(e) { e.preventDefault() }, { passive: false });
 </script>
 </body>
