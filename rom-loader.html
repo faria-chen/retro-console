@@ -87,6 +87,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   color:rgba(255,255,255,0.5);font-size:clamp(0.8rem,2.5vh,1.2rem);
   cursor:pointer;transition:background 0.06s;
   backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+  touch-action:none;
 }
 .db:active,.db.on{background:rgba(255,255,255,0.3);color:#fff;border-color:rgba(255,255,255,0.5)}
 .du{top:0;left:50%;transform:translateX(-50%);width:40%;height:34%;border-radius:14px 14px 6px 6px}
@@ -113,6 +114,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   position:absolute;border:none;font-family:inherit;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:transform 0.06s;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+  touch-action:none;
 }
 .ab-btn:active,.ab-btn.on{transform:scale(0.9)}
 /* A — big red, top-right */
@@ -404,30 +406,37 @@ function renderRecent() {
 function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
 
 // ================================================================
-//  CONTROLS
+//  CONTROLS — jsnes native API for touch, keyboard events for keys
 // ================================================================
-var keyCodeMap = { up: 38, down: 40, left: 37, right: 39, a: 88, b: 90, start: 13, select: 17 };
+var BTN = { up:0x10, down:0x20, left:0x40, right:0x80, a:0x01, b:0x02, select:0x04, start:0x08 };
+var keyCodeMap = { up:38, down:40, left:37, right:39, a:88, b:90, start:13, select:17 };
+
+function nesBtnDown(btn) { if (browser && browser.nes && browser.nes.controller1) browser.nes.controller1.buttonDown(btn) }
+function nesBtnUp(btn) { if (browser && browser.nes && browser.nes.controller1) browser.nes.controller1.buttonUp(btn) }
+
 function fireKey(type, kc) {
-  document.dispatchEvent(new KeyboardEvent(type, { keyCode: kc, which: kc, key: '', bubbles: true }));
+  document.dispatchEvent(new KeyboardEvent(type, { keyCode:kc, which:kc, key:'', bubbles:true }));
 }
+
 function bindTouchControls() {
   document.querySelectorAll('[data-key]').forEach(function(el) {
     var k = el.getAttribute('data-key');
-    var kc = keyCodeMap[k]; if (!kc) return;
-    function dn(e) { e.preventDefault(); e.stopPropagation(); el.classList.add('on'); fireKey('keydown', kc) }
-    function up(e) { e.preventDefault(); e.stopPropagation(); el.classList.remove('on'); fireKey('keyup', kc) }
-    el.addEventListener('touchstart', dn, { passive: false });
-    el.addEventListener('touchend', up, { passive: false });
-    el.addEventListener('touchcancel', up, { passive: false });
+    var btn = BTN[k]; if (btn === undefined) return;
+    var kc = keyCodeMap[k];
+    function dn(e) { e.preventDefault(); e.stopPropagation(); el.classList.add('on'); nesBtnDown(btn); fireKey('keydown',kc) }
+    function up(e) { e.preventDefault(); e.stopPropagation(); el.classList.remove('on'); nesBtnUp(btn); fireKey('keyup',kc) }
+    el.addEventListener('touchstart', dn, { passive:false });
+    el.addEventListener('touchend', up, { passive:false });
+    el.addEventListener('touchcancel', up, { passive:false });
     el.addEventListener('mousedown', dn);
     el.addEventListener('mouseup', up);
     el.addEventListener('mouseleave', up);
   });
 }
 // WASD
-var wasdMap = { w: 38, s: 40, a: 37, d: 39 };
-document.addEventListener('keydown', function(e) { var kc = wasdMap[e.key]; if (kc !== undefined) { e.preventDefault(); fireKey('keydown', kc) } });
-document.addEventListener('keyup', function(e) { var kc = wasdMap[e.key]; if (kc !== undefined) { e.preventDefault(); fireKey('keyup', kc) } });
+var wasdMap = { w:38, s:40, a:37, d:39 };
+document.addEventListener('keydown', function(e) { var kc=wasdMap[e.key]; if(kc!==undefined){e.preventDefault();fireKey('keydown',kc)} });
+document.addEventListener('keyup', function(e) { var kc=wasdMap[e.key]; if(kc!==undefined){e.preventDefault();fireKey('keyup',kc)} });
 
 // Pause
 var paused = false;
