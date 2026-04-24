@@ -61,7 +61,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Pr
 .topbar .back:active{background:#333}
 .topbar .info{color:#9bbc0f;font-size:0.35rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65%}
 
-.emu-wrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%;padding:32px 0 4px}
+.emu-wrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%;padding:32px 0 4px;overflow:hidden;min-height:0}
 #emu-container{
   image-rendering:pixelated;image-rendering:crisp-edges;
   border:3px solid #333;border-radius:4px;background:#000;
@@ -71,7 +71,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Pr
 #emu-container canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 
 /* Touch controls — only on mobile */
-.touch-ctrl{width:100%;display:flex;justify-content:space-between;align-items:center;padding:6px 10px 10px;flex-shrink:0}
+.touch-ctrl{
+  width:100%;display:flex;justify-content:space-between;align-items:center;
+  padding:6px 10px env(safe-area-inset-bottom,10px);flex-shrink:0;
+  min-height:150px;
+}
 @media(min-width:769px){.touch-ctrl{display:none}}
 
 .dp{position:relative;width:140px;height:140px}
@@ -100,15 +104,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Pr
 .toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:0.38rem;padding:8px 16px;border-radius:8px;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none}
 .toast.show{opacity:1}
 
-@media(max-height:500px){
-  .dp{width:120px;height:120px}
-  .du,.dd{width:48px;height:38px;left:36px}
-  .dl,.dr{width:38px;height:44px;top:38px}
+@media(max-height:580px){
+  .dp{width:110px;height:110px}
+  .du,.dd{width:44px;height:34px;left:33px}
+  .dl,.dr{width:34px;height:40px;top:34px}
   .dl{left:0}.dr{right:0}.du{top:0}.dd{bottom:0}
-  .dc{top:38px;left:38px;width:44px;height:44px}
-  .ba,.bb{width:48px;height:48px}
-  .bp{width:68px;height:28px}
-  .touch-ctrl{padding:4px 8px 6px}
+  .dc{top:34px;left:34px;width:42px;height:42px}
+  .ba,.bb{width:44px;height:44px}
+  .bp{width:64px;height:26px}
+  .touch-ctrl{padding:4px 8px 6px;min-height:120px}
+}
+@media(max-height:480px){
+  .dp{width:100px;height:100px}
+  .du,.dd{width:40px;height:30px;left:30px}
+  .dl,.dr{width:30px;height:36px;top:32px}
+  .dl{left:0}.dr{right:0}.du{top:0}.dd{bottom:0}
+  .dc{top:32px;left:32px;width:36px;height:36px}
+  .ba,.bb{width:40px;height:40px}
+  .bp{width:56px;height:24px}
+  .touch-ctrl{padding:2px 6px 4px;min-height:100px}
 }
 </style>
 </head>
@@ -264,7 +278,10 @@ function resizeEmu() {
   var container = document.getElementById('emu-container');
   var canvas = container.querySelector('canvas');
   if (!canvas) return;
-  var mh = window.innerHeight - 180;
+  // Reserve space: topbar(32) + padding(8) + touch-ctrl(~160) + safe-area
+  var isMobile = window.innerWidth < 769;
+  var reserve = isMobile ? 210 : 50;
+  var mh = window.innerHeight - reserve;
   var mw = window.innerWidth - 20;
   var s = Math.min(mw / 256, mh / 240);
   s = Math.max(1, Math.floor(s));
