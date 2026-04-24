@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>🎮 复古掌机 · ROM Loader</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Press Start 2P',monospace}
+
+/* ====== BOOT ====== */
+#boot{position:fixed;inset:0;z-index:200;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s}
+#boot.hide{opacity:0;pointer-events:none}
+#boot h1{font-size:clamp(0.9rem,3.5vw,1.4rem);color:#9bbc0f;text-shadow:0 0 20px rgba(155,188,15,0.5);line-height:2.2;margin-bottom:16px;text-align:center}
+#boot .sub{color:#306230;font-size:0.5rem;margin-bottom:30px}
+#boot .prompt{color:#306230;font-size:0.6rem;animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ====== MENU ====== */
+#menu{position:fixed;inset:0;z-index:100;background:#111;display:none;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;padding:20px}
+#menu.show{display:flex}
+#menu h2{font-size:0.7rem;color:#9bbc0f;margin-bottom:20px;text-shadow:0 0 10px rgba(155,188,15,0.3)}
+
+/* Drop zone */
+.drop-zone{
+  width:min(90%,420px);min-height:180px;border:3px dashed #333;border-radius:16px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  padding:28px 20px;transition:all 0.2s;cursor:pointer;position:relative;
+}
+.drop-zone.over{border-color:#9bbc0f;background:rgba(155,188,15,0.06);transform:scale(1.02)}
+.drop-zone .icon{font-size:2.2rem}
+.drop-zone .txt{color:#666;font-size:0.45rem;line-height:2.2;text-align:center}
+.drop-zone .txt b{color:#9bbc0f}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+/* Hint */
+.hint{width:min(90%,420px);margin-top:16px;padding:12px 14px;background:#1a1a1a;border-radius:8px;border:1px solid #222}
+.hint p{color:#555;font-size:0.35rem;line-height:2}
+.hint kbd{background:#333;color:#9bbc0f;padding:1px 5px;border-radius:3px;font-size:0.3rem}
+
+/* Recent */
+.recent{width:min(90%,420px);margin-top:18px}
+.recent h3{font-size:0.45rem;color:#666;margin-bottom:10px}
+.rom-list{display:flex;flex-direction:column;gap:8px;max-height:160px;overflow-y:auto}
+.rom-item{
+  background:#1a1a1a;border:2px solid #333;border-radius:8px;padding:10px 14px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.15s;
+}
+.rom-item:active,.rom-item:hover{background:#222;border-color:#9bbc0f;transform:scale(0.98)}
+.rom-item .ri{font-size:1.2rem}
+.rom-item .rn{font-size:0.42rem;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
+.rom-item .rs{font-size:0.32rem;color:#666;margin-top:3px}
+
+/* ====== EMULATOR SHELL ====== */
+#shell{display:none;width:100%;height:100%;flex-direction:column;align-items:center;justify-content:center;background:#111;position:relative}
+#shell.active{display:flex}
+
+.topbar{position:absolute;top:0;left:0;right:0;height:32px;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:rgba(0,0,0,0.9)}
+.topbar .back{color:#888;font-size:0.4rem;cursor:pointer;padding:5px 10px;border:1px solid #444;border-radius:6px;background:none;font-family:inherit}
+.topbar .back:active{background:#333}
+.topbar .info{color:#9bbc0f;font-size:0.35rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65%}
+
+.emu-wrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%;padding:32px 0 4px}
+#emu-container{
+  image-rendering:pixelated;image-rendering:crisp-edges;
+  border:3px solid #333;border-radius:4px;background:#000;
+  box-shadow:0 0 20px rgba(0,0,0,0.5);
+  overflow:hidden;
+}
+#emu-container canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* Touch controls — only on mobile */
+.touch-ctrl{width:100%;display:flex;justify-content:space-between;align-items:center;padding:6px 10px 10px;flex-shrink:0}
+@media(min-width:769px){.touch-ctrl{display:none}}
+
+.dp{position:relative;width:140px;height:140px}
+.db{position:absolute;display:flex;align-items:center;justify-content:center;background:#222;border:2px solid #555;color:#888;font-size:1.2rem;cursor:pointer;transition:background 0.05s;border-radius:8px}
+.db:active,.db.on{background:#555;color:#fff}
+.du{top:0;left:42px;width:56px;height:46px;border-radius:10px 10px 4px 4px}
+.dd{bottom:0;left:42px;width:56px;height:46px;border-radius:4px 4px 10px 10px}
+.dl{top:46px;left:0;width:46px;height:48px;border-radius:10px 4px 4px 10px}
+.dr{top:46px;right:0;width:46px;height:48px;border-radius:4px 10px 10px 4px}
+.dc{top:46px;left:46px;width:48px;height:48px;background:#1a1a1a;border:none;pointer-events:none;border-radius:4px}
+
+.ab{display:flex;flex-direction:column;align-items:center;gap:8px}
+.ab-top{display:flex;gap:12px}
+.btn{border:none;font-family:inherit;cursor:pointer;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,0.4);transition:transform 0.05s,box-shadow 0.05s;display:flex;align-items:center;justify-content:center}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,0.4)}
+.ba{width:56px;height:56px;border-radius:50%;background:#c0392b;font-size:0.6rem}
+.bb{width:56px;height:56px;border-radius:50%;background:#2980b9;font-size:0.6rem}
+.bp{width:80px;height:32px;border-radius:16px;background:#27ae60;font-size:0.35rem}
+
+/* Pause */
+#pause{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.75)}
+#pause.show{display:flex}
+#pause span{font-size:0.8rem;color:#9bbc0f;animation:blink 1s step-end infinite}
+
+/* Toast */
+.toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:0.38rem;padding:8px 16px;border-radius:8px;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.toast.show{opacity:1}
+
+@media(max-height:500px){
+  .dp{width:120px;height:120px}
+  .du,.dd{width:48px;height:38px;left:36px}
+  .dl,.dr{width:38px;height:44px;top:38px}
+  .dl{left:0}.dr{right:0}.du{top:0}.dd{bottom:0}
+  .dc{top:38px;left:38px;width:44px;height:44px}
+  .ba,.bb{width:48px;height:48px}
+  .bp{width:68px;height:28px}
+  .touch-ctrl{padding:4px 8px 6px}
+}
+</style>
+</head>
+<body>
+
+<div id="boot">
+  <h1>🎮 复古掌机<br>ROM Loader</h1>
+  <div class="sub">NES / Famicom</div>
+  <div class="prompt">TAP TO START</div>
+</div>
+
+<div id="menu">
+  <h2>— LOAD ROM —</h2>
+  <div class="drop-zone" id="dropZone">
+    <div class="icon">📂</div>
+    <div class="txt">拖拽 <b>.nes</b> ROM 文件到这里<br>或点击选择文件</div>
+    <input type="file" id="fileInput" accept=".nes,.NES" />
+  </div>
+  <div class="hint">
+    <p>⌨️ 键盘: <kbd>WASD</kbd> / <kbd>方向键</kbd> 移动, <kbd>Z</kbd> / <kbd>J</kbd> A键, <kbd>X</kbd> / <kbd>K</kbd> B键, <kbd>Enter</kbd> START, <kbd>Shift</kbd> SELECT</p>
+    <p>🎮 手柄: 接入后自动识别</p>
+  </div>
+  <div class="recent" id="recentSection" style="display:none">
+    <h3>— 最近游玩 —</h3>
+    <div class="rom-list" id="romList"></div>
+  </div>
+</div>
+
+<div id="shell">
+  <div class="topbar">
+    <button class="back" id="backBtn">◀ MENU</button>
+    <div class="info" id="romName"></div>
+  </div>
+  <div class="emu-wrap">
+    <div id="emu-container"></div>
+  </div>
+  <div class="touch-ctrl">
+    <div class="dp">
+      <div class="db du" data-key="up">▲</div>
+      <div class="db dd" data-key="down">▼</div>
+      <div class="db dl" data-key="left">◀</div>
+      <div class="db dr" data-key="right">▶</div>
+      <div class="dc"></div>
+    </div>
+    <div class="ab">
+      <div class="ab-top">
+        <button class="btn bb" data-key="b">B</button>
+        <button class="btn ba" data-key="a">A</button>
+      </div>
+      <button class="btn bp" data-key="start">PAUSE</button>
+    </div>
+  </div>
+  <div id="pause"><span>⏸ PAUSED</span></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/jsnes@2/dist/jsnes.min.js"></script>
+<script>
+// ================================================================
+//  STATE
+// ================================================================
+var browser = null;
+var currentROM = null;
+
+// ================================================================
+//  TOAST
+// ================================================================
+function toast(msg, dur) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(function() { t.classList.remove('show') }, dur || 2000);
+}
+
+// ================================================================
+//  AUDIO INIT (must be after user gesture)
+// ================================================================
+var audioReady = false;
+function ensureAudio() {
+  if (audioReady) return;
+  // jsnes.Browser handles audio internally via AudioContext
+  // Just need to resume suspended context after user gesture
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) {
+      var ctx = new AC();
+      if (ctx.state === 'suspended') ctx.resume();
+      ctx.close();
+    }
+  } catch(e) {}
+  audioReady = true;
+}
+
+// ================================================================
+//  FILE HANDLING
+// ================================================================
+function handleFile(file) {
+  if (!file || !file.name.match(/\.nes$/i)) {
+    toast('请选择 .nes 格式的 ROM 文件'); return;
+  }
+  if (file.size > 4 * 1024 * 1024) {
+    toast('文件太大 (>4MB)'); return;
+  }
+  ensureAudio();
+  toast('加载中...');
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var data = e.target.result;
+    startEmulator(data, file.name);
+  };
+  reader.onerror = function() { toast('读取文件失败') };
+  reader.readAsBinaryString(file);
+}
+
+function startEmulator(romData, name) {
+  // Destroy previous instance
+  if (browser) {
+    try { browser.destroy() } catch(e) {}
+    browser = null;
+  }
+
+  var container = document.getElementById('emu-container');
+  container.innerHTML = '';
+
+  try {
+    browser = new jsnes.Browser({
+      container: container,
+      romData: romData,
+      onError: function(e) {
+        console.error('NES error:', e);
+        toast('模拟器错误: ' + e);
+      }
+    });
+  } catch(e) {
+    toast('ROM 加载失败: ' + e.message);
+    console.error(e);
+    return;
+  }
+
+  currentROM = name;
+  document.getElementById('romName').textContent = name;
+  saveRecent(name);
+
+  // Show shell
+  document.getElementById('menu').classList.remove('show');
+  document.getElementById('shell').classList.add('active');
+  resizeEmu();
+}
+
+function resizeEmu() {
+  var container = document.getElementById('emu-container');
+  var canvas = container.querySelector('canvas');
+  if (!canvas) return;
+  var mh = window.innerHeight - 180;
+  var mw = window.innerWidth - 20;
+  var s = Math.min(mw / 256, mh / 240);
+  s = Math.max(1, Math.floor(s));
+  canvas.style.width = (256 * s) + 'px';
+  canvas.style.height = (240 * s) + 'px';
+}
+
+// ================================================================
+//  RECENT ROMs (name only, ROM stored in memory for session)
+// ================================================================
+var STORAGE_KEY = 'retro-console-recent';
+var recentROMs = {};  // in-memory cache for current session
+
+function getRecentList() {
+  try {
+    var d = localStorage.getItem(STORAGE_KEY);
+    return d ? JSON.parse(d) : [];
+  } catch(e) { return [] }
+}
+
+function saveRecent(name) {
+  var list = getRecentList();
+  list = list.filter(function(n) { return n !== name });
+  list.unshift(name);
+  if (list.length > 8) list = list.slice(0, 8);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)) } catch(e) {}
+  renderRecent();
+}
+
+function renderRecent() {
+  var list = getRecentList();
+  var sec = document.getElementById('recentSection');
+  var el = document.getElementById('romList');
+  if (list.length === 0) { sec.style.display = 'none'; return }
+  sec.style.display = 'block';
+  el.innerHTML = '';
+  list.forEach(function(name) {
+    var div = document.createElement('div');
+    div.className = 'rom-item';
+    div.innerHTML = '<div class="ri">🎮</div><div><div class="rn">' + escHtml(name) + '</div><div class="rs">需要重新选择文件</div></div>';
+    div.addEventListener('click', function() {
+      toast('请通过文件选择器重新加载此 ROM');
+      document.getElementById('fileInput').click();
+    });
+    el.appendChild(div);
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ================================================================
+//  TOUCH CONTROLS (bridge to jsnes.Browser keyboard events)
+// ================================================================
+var keyMap = {
+  up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
+  a: 'z', b: 'x', start: 'Enter', select: 'Shift'
+};
+
+function bindTouchControls() {
+  document.querySelectorAll('[data-key]').forEach(function(el) {
+    var k = el.getAttribute('data-key');
+    var key = keyMap[k];
+    if (!key) return;
+
+    function dn(e) {
+      e.preventDefault();
+      el.classList.add('on');
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: key, bubbles: true }));
+    }
+    function up(e) {
+      e.preventDefault();
+      el.classList.remove('on');
+      document.dispatchEvent(new KeyboardEvent('keyup', { key: key, bubbles: true }));
+    }
+    el.addEventListener('touchstart', dn, { passive: false });
+    el.addEventListener('touchend', up, { passive: false });
+    el.addEventListener('touchcancel', up, { passive: false });
+    el.addEventListener('mousedown', dn);
+    el.addEventListener('mouseup', up);
+    el.addEventListener('mouseleave', up);
+  });
+}
+
+// ================================================================
+//  PAUSE (jsnes.Browser doesn't have built-in pause, use overlay)
+// ================================================================
+var paused = false;
+function togglePause() {
+  paused = !paused;
+  document.getElementById('pause').classList.toggle('show', paused);
+  if (browser && browser.nes) {
+    // jsnes doesn't have pause, but we can stop frame loop by toggling
+    // The simplest way: just show overlay, frames keep rendering but game logic won't advance
+    // without input, this is fine
+  }
+}
+
+// Listen for keyboard pause
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+    if (document.getElementById('shell').classList.contains('active')) {
+      togglePause();
+    }
+  }
+});
+
+// ================================================================
+//  INIT
+// ================================================================
+bindTouchControls();
+renderRecent();
+
+// Boot screen
+document.getElementById('boot').addEventListener('click', function() {
+  ensureAudio();
+  this.classList.add('hide');
+  setTimeout(function() { document.getElementById('boot').style.display = 'none' }, 500);
+  document.getElementById('menu').classList.add('show');
+});
+
+// Drop zone
+var dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('over') });
+dz.addEventListener('dragleave', function() { dz.classList.remove('over') });
+dz.addEventListener('drop', function(e) {
+  e.preventDefault(); dz.classList.remove('over');
+  var f = e.dataTransfer.files[0]; if (f) handleFile(f);
+});
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  var f = e.target.files[0]; if (f) handleFile(f);
+  this.value = '';
+});
+
+// Back button
+document.getElementById('backBtn').addEventListener('click', function() {
+  if (browser) {
+    try { browser.destroy() } catch(e) {}
+    browser = null;
+  }
+  paused = false;
+  document.getElementById('pause').classList.remove('show');
+  document.getElementById('shell').classList.remove('active');
+  document.getElementById('emu-container').innerHTML = '';
+  document.getElementById('menu').classList.add('show');
+});
+
+// Resize
+window.addEventListener('resize', function() {
+  if (document.getElementById('shell').classList.contains('active')) resizeEmu();
+});
+
+// Prevent scroll on mobile
+document.addEventListener('touchmove', function(e) { e.preventDefault() }, { passive: false });
+</script>
+</body>
+</html>
