@@ -604,11 +604,20 @@ var infLivesPoked = false;
 
 // Game-specific cheat profiles: { lives: addr, livesVal, hp: [addrs], hpVal }
 var CHEAT_PROFILES = {
-  contra:    { lives: 0x0032, livesVal: 0x0A, hp: [], hpVal: 0 },
-  mario:     { lives: 0x075A, livesVal: 0x08, hp: [], hpVal: 0 },
-  megaman:   { lives: 0x00A6, livesVal: 0x09, hp: [0x006C], hpVal: 0x1C },
+  contra:     { lives: 0x0032, livesVal: 0x0A, hp: [], hpVal: 0 },
+  mario:      { lives: 0x075A, livesVal: 0x08, hp: [], hpVal: 0 },
+  megaman:    { lives: 0x00A6, livesVal: 0x09, hp: [0x006C], hpVal: 0x1C },
   castlevania:{ lives: 0x0048, livesVal: 0x09, hp: [0x0045], hpVal: 0xFF },
-  default:   { lives: 0x0075, livesVal: 0x09, hp: [], hpVal: 0 }
+  tmnt:       { lives: 0x0091, livesVal: 0x09, hp: [0x0092], hpVal: 0xFF },
+  doubledragon:{ lives: 0x0074, livesVal: 0x09, hp: [0x0075], hpVal: 0x20 },
+  ninjagaiden:{ lives: 0x0091, livesVal: 0x09, hp: [0x007E], hpVal: 0x10 },
+  ducktales:  { lives: 0x006F, livesVal: 0x09, hp: [], hpVal: 0 },
+  chipdale:   { lives: 0x0068, livesVal: 0x09, hp: [], hpVal: 0 },
+  battlecity: { lives: 0x0009, livesVal: 0x09, hp: [], hpVal: 0 },
+  bomberman:  { lives: 0x0040, livesVal: 0x09, hp: [], hpVal: 0 },
+  gradius:    { lives: 0x0058, livesVal: 0x09, hp: [0x0048], hpVal: 0x04 },
+  galaga:     { lives: 0x0061, livesVal: 0x09, hp: [], hpVal: 0 },
+  default:    null // disabled for unknown games — user can still try
 };
 
 var currentCheat = null;
@@ -619,6 +628,15 @@ function detectGame(name) {
   if (/mario|马里奥|超级玛/.test(n)) return 'mario';
   if (/rockman|洛克人|megaman/.test(n)) return 'megaman';
   if (/castlevania|恶魔城/.test(n)) return 'castlevania';
+  if (/tmnt|忍者龟|神龟/.test(n)) return 'tmnt';
+  if (/double.?dragon|双截龙/.test(n)) return 'doubledragon';
+  if (/ninja.?gaiden|忍者龙剑/.test(n)) return 'ninjagaiden';
+  if (/duck.?tales|唐老鸭/.test(n)) return 'ducktales';
+  if (/chip.*dale|松鼠/.test(n)) return 'chipdale';
+  if (/battle.?city|坦克大战/.test(n)) return 'battlecity';
+  if (/bomber|炸弹人/.test(n)) return 'bomberman';
+  if (/gradius|宇宙巡航/.test(n)) return 'gradius';
+  if (/galaga/.test(n)) return 'galaga';
   return 'default';
 }
 
@@ -662,9 +680,18 @@ document.getElementById('infLivesBtn').addEventListener('click', function() {
   this.style.color = infLivesOn ? '#9bbc0f' : '#ccc';
   this.style.background = infLivesOn ? 'rgba(155,188,15,0.15)' : 'transparent';
   if (infLivesOn) {
-    currentCheat = CHEAT_PROFILES[detectGame(currentRomName)] || CHEAT_PROFILES['default'];
-    toast('♾️ 无限命 ON (' + currentRomName + ')');
+    currentCheat = CHEAT_PROFILES[detectGame(currentRomName)];
+    if (!currentCheat) {
+      infLivesOn = false;
+      this.style.borderColor = 'rgba(241,196,15,0.5)';
+      this.style.color = '#ccc';
+      this.style.background = 'transparent';
+      toast('⚠️ 不支持该游戏，地址未知');
+    } else {
+      toast('♾️ 无限命 ON (' + currentRomName + ')');
+    }
   } else {
+    currentCheat = null;
     toast('♾️ 无限命 OFF');
   }
   showTopbar();
