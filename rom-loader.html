@@ -597,23 +597,41 @@ function loadState() {
 }
 
 // ================================================================
-//  INFINITE LIVES — simple toggle, pokes common life addresses
+//  INFINITE LIVES — game-specific addresses, poke only when toggled
 // ================================================================
 var infLivesOn = false;
-// Common NES life/health addresses (covers many games)
-var LIFE_ADDRS = [0x0075, 0x006F, 0x0070, 0x0700, 0x0704, 0x07F8, 0x0058, 0x0352, 0x0398];
+var infLivesPoked = false;
 
-function applyInfLives() {
+// Game-specific cheat profiles: { lives: addr, livesVal, hp: [addrs], hpVal }
+var CHEAT_PROFILES = {
+  contra:    { lives: 0x0032, livesVal: 0x0A, hp: [], hpVal: 0 },
+  mario:     { lives: 0x075A, livesVal: 0x08, hp: [], hpVal: 0 },
+  megaman:   { lives: 0x00A6, livesVal: 0x09, hp: [0x006C], hpVal: 0x1C },
+  castlevania:{ lives: 0x0048, livesVal: 0x09, hp: [0x0045], hpVal: 0xFF },
+  default:   { lives: 0x0075, livesVal: 0x09, hp: [], hpVal: 0 }
+};
+
+var currentCheat = null;
+
+function detectGame(name) {
+  var n = name.toLowerCase();
+  if (/contra|魂斗罗/.test(n)) return 'contra';
+  if (/mario|马里奥|超级玛/.test(n)) return 'mario';
+  if (/rockman|洛克人|megaman/.test(n)) return 'megaman';
+  if (/castlevania|恶魔城/.test(n)) return 'castlevania';
+  return 'default';
+}
+
+function applyInfLivesOnce() {
   if (!browser || !browser.nes || !browser.nes.cpu) return;
   var mem = browser.nes.cpu.mem;
-  for (var i = 0; i < LIFE_ADDRS.length; i++) {
-    mem[LIFE_ADDRS[i]] = 0x09; // 9 lives
+  var c = currentCheat;
+  if (!c) return;
+  mem[c.lives] = c.livesVal;
+  for (var i = 0; i < c.hp.length; i++) {
+    mem[c.hp[i]] = c.hpVal;
   }
-  // Also try to set a high value for HP-type addresses
-  var HP_ADDRS = [0x0704, 0x006C, 0x00A0, 0x04AC];
-  for (var i = 0; i < HP_ADDRS.length; i++) {
-    mem[HP_ADDRS[i]] = 0xFF;
-  }
+  infLivesPoked = true;
 }
 
 // ================================================================
@@ -639,17 +657,34 @@ document.getElementById('loadBtn').addEventListener('click', function() { loadSt
 // Infinite lives toggle
 document.getElementById('infLivesBtn').addEventListener('click', function() {
   infLivesOn = !infLivesOn;
+  infLivesPoked = false;
   this.style.borderColor = infLivesOn ? '#9bbc0f' : 'rgba(241,196,15,0.5)';
   this.style.color = infLivesOn ? '#9bbc0f' : '#ccc';
   this.style.background = infLivesOn ? 'rgba(155,188,15,0.15)' : 'transparent';
-  toast(infLivesOn ? '♾️ 无限命 ON' : '♾️ 无限命 OFF');
+  if (infLivesOn) {
+    currentCheat = CHEAT_PROFILES[detectGame(currentRomName)] || CHEAT_PROFILES['default'];
+    toast('♾️ 无限命 ON (' + currentRomName + ')');
+  } else {
+    toast('♾️ 无限命 OFF');
+  }
   showTopbar();
 });
 
-// Apply cheats every frame (~60fps)
+// Apply cheats every 500ms — monitor lives and re-poke if decreased
 setInterval(function() {
-  if (infLivesOn && browser && browser.nes && !paused) applyInfLives();
-}, 16);
+  if (!infLivesOn || !currentCheat || !browser || !browser.nes || paused) return;
+  var mem = browser.nes.cpu.mem;
+  var livesAddr = currentCheat.lives;
+  if (mem[livesAddr] < currentCheat.livesVal) {
+    mem[livesAddr] = currentCheat.livesVal;
+  }
+  for (var i = 0; i < currentCheat.hp.length; i++) {
+    var addr = currentCheat.hp[i];
+    if (mem[addr] < currentCheat.hpVal) {
+      mem[addr] = currentCheat.hpVal;
+    }
+  }
+}, 500);
 
 document.getElementById('centerTap').addEventListener('click', function() { showTopbar() });
 document.getElementById('backBtn').addEventListener('click', function() {
