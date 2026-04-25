@@ -74,27 +74,47 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   pointer-events:none;
 }
 .dp{position:relative;pointer-events:auto}
-/* Size relative to viewport height */
 @media(orientation:landscape){
   .dp{width:min(48vh,260px);height:min(48vh,260px)}
 }
 @media(orientation:portrait){
   .dp{width:min(52vw,260px);height:min(52vw,260px)}
 }
-.db{
-  position:absolute;display:flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);
-  color:rgba(255,255,255,0.5);font-size:clamp(0.8rem,2.5vh,1.2rem);
-  cursor:pointer;transition:background 0.06s;
+/* Circular directional disc */
+.disc{
+  position:absolute;inset:0;border-radius:50%;
+  background:rgba(255,255,255,0.08);
+  border:3px solid rgba(255,255,255,0.2);
+  touch-action:none;cursor:pointer;
   backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
-  touch-action:none;
 }
-.db:active,.db.on{background:rgba(255,255,255,0.3);color:#fff;border-color:rgba(255,255,255,0.5)}
-.du{top:0;left:50%;transform:translateX(-50%);width:40%;height:34%;border-radius:14px 14px 6px 6px}
-.dd{bottom:0;left:50%;transform:translateX(-50%);width:40%;height:34%;border-radius:6px 6px 14px 14px}
-.dl{top:50%;left:0;transform:translateY(-50%);width:34%;height:40%;border-radius:14px 6px 6px 14px}
-.dr{top:50%;right:0;transform:translateY(-50%);width:34%;height:40%;border-radius:6px 14px 14px 6px}
-.dc{top:50%;left:50%;transform:translate(-50%,-50%);width:32%;height:32%;background:rgba(255,255,255,0.03);border:none;pointer-events:none;border-radius:50%}
+/* Crosshair lines */
+.disc::before,.disc::after{
+  content:'';position:absolute;background:rgba(255,255,255,0.08);
+}
+.disc::before{top:50%;left:10%;right:10%;height:2px;transform:translateY(-50%)}
+.disc::after{left:50%;top:10%;bottom:10%;width:2px;transform:translateX(-50%)}
+/* Thumb indicator dot */
+.disc-dot{
+  position:absolute;width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,0.35);
+  border:2px solid rgba(255,255,255,0.5);
+  transform:translate(-50%,-50%);
+  pointer-events:none;display:none;
+  box-shadow:0 0 12px rgba(255,255,255,0.2);
+  transition:opacity 0.1s;
+}
+/* Direction highlight wedges */
+.disc-dir{
+  position:absolute;font-size:clamp(0.6rem,2vh,0.9rem);
+  color:rgba(255,255,255,0.35);pointer-events:none;
+  text-shadow:0 0 4px rgba(0,0,0,0.5);
+}
+.disc-dir.on{color:rgba(155,188,15,0.9);text-shadow:0 0 8px rgba(155,188,15,0.5)}
+.disc-dir.du{top:6%;left:50%;transform:translateX(-50%)}
+.disc-dir.dd{bottom:6%;left:50%;transform:translateX(-50%)}
+.disc-dir.dl{left:6%;top:50%;transform:translateY(-50%)}
+.disc-dir.dr{right:6%;top:50%;transform:translateY(-50%)}
 
 /* Action Buttons — bottom right */
 .btn-zone{
@@ -225,6 +245,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
     <button class="back" id="backBtn">◀ MENU</button>
     <div class="info" id="romName"></div>
     <div style="display:flex;gap:6px">
+      <button class="back" id="infLivesBtn" style="border-color:rgba(241,196,15,0.5)">♾️ ∞命</button>
       <button class="back" id="saveBtn" style="border-color:rgba(46,204,113,0.5)">💾 SAVE</button>
       <button class="back" id="loadBtn" style="border-color:rgba(52,152,219,0.5)">📂 LOAD</button>
     </div>
@@ -233,12 +254,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   <!-- Touch controls overlay -->
   <div class="touch-layer" id="touchLayer">
     <div class="pad-zone">
-      <div class="dp">
-        <div class="db du" data-key="up">▲</div>
-        <div class="db dd" data-key="down">▼</div>
-        <div class="db dl" data-key="left">◀</div>
-        <div class="db dr" data-key="right">▶</div>
-        <div class="dc"></div>
+      <div class="dp" id="dpad">
+        <div class="disc" id="disc"></div>
+        <div class="disc-dot" id="discDot"></div>
+        <span class="disc-dir du" id="ddUp">▲</span>
+        <span class="disc-dir dd" id="ddDown">▼</span>
+        <span class="disc-dir dl" id="ddLeft">◀</span>
+        <span class="disc-dir dr" id="ddRight">▶</span>
       </div>
     </div>
     <div class="btn-zone">
@@ -418,9 +440,106 @@ function fireKey(type, kc) {
   document.dispatchEvent(new KeyboardEvent(type, { keyCode:kc, which:kc, key:'', bubbles:true }));
 }
 
+// --- Directional disc: touch anywhere on the circle to set direction ---
+var discDirs = { up:false, down:false, left:false, right:false };
+
+function discSetDir(dir, on) {
+  if (discDirs[dir] === on) return;
+  discDirs[dir] = on;
+  var kc = keyCodeMap[dir];
+  var btn = BTN[dir];
+  if (on) { nesBtnDown(btn); fireKey('keydown', kc) }
+  else    { nesBtnUp(btn);   fireKey('keyup', kc) }
+  // Highlight indicator
+  var map = { up:'ddUp', down:'ddDown', left:'ddLeft', right:'ddRight' };
+  var el = document.getElementById(map[dir]);
+  if (el) { if (on) el.classList.add('on'); else el.classList.remove('on') }
+}
+
+function discClearAll() {
+  ['up','down','left','right'].forEach(function(d) { discSetDir(d, false) });
+  var dot = document.getElementById('discDot');
+  if (dot) dot.style.display = 'none';
+}
+
+function discFromXY(x, y) {
+  var el = document.getElementById('dpad');
+  var rect = el.getBoundingClientRect();
+  var cx = rect.left + rect.width / 2;
+  var cy = rect.top + rect.height / 2;
+  var dx = x - cx;
+  var dy = y - cy;
+  var r = Math.min(rect.width, rect.height) / 2;
+  var dist = Math.sqrt(dx * dx + dy * dy);
+
+  // Show thumb dot
+  var dot = document.getElementById('discDot');
+  if (dot) {
+    // Clamp dot inside circle
+    var maxDist = r - 18;
+    var showDist = Math.min(dist, maxDist);
+    var angle = Math.atan2(dy, dx);
+    dot.style.left = (rect.width / 2 + Math.cos(angle) * showDist) + 'px';
+    dot.style.top = (rect.height / 2 + Math.sin(angle) * showDist) + 'px';
+    dot.style.display = 'block';
+  }
+
+  // Dead zone: inner 20% radius = no direction
+  var deadZone = r * 0.2;
+  if (dist < deadZone) { discClearAll(); return }
+
+  // Angle in degrees (0=right, 90=down, 180/-180=left, -90=up)
+  var deg = Math.atan2(dy, dx) * 180 / Math.PI;
+  // Map to 8 octants: each 45°, offset by 22.5°
+  // Sector 0: -22.5 to 22.5 → right
+  // Sector 1: 22.5 to 67.5 → down-right
+  // Sector 2: 67.5 to 112.5 → down
+  // ... etc
+  var sector = Math.round(((deg + 180) % 360 + 360) % 360 / 45) % 8;
+  // Sectors: 0=left, 1=up-left, 2=up, 3=up-right, 4=right, 5=down-right, 6=down, 7=down-left
+  discSetDir('right', sector === 3 || sector === 4 || sector === 5);
+  discSetDir('down',  sector === 5 || sector === 6 || sector === 7);
+  discSetDir('left',  sector === 7 || sector === 0 || sector === 1);
+  discSetDir('up',    sector === 1 || sector === 2 || sector === 3);
+}
+
+function bindDisc() {
+  var disc = document.getElementById('disc');
+  // Touch events
+  disc.addEventListener('touchstart', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    var t = e.touches[0]; discFromXY(t.clientX, t.clientY);
+  }, { passive: false });
+  disc.addEventListener('touchmove', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    var t = e.touches[0]; discFromXY(t.clientX, t.clientY);
+  }, { passive: false });
+  disc.addEventListener('touchend', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    if (e.touches.length === 0) discClearAll();
+  }, { passive: false });
+  disc.addEventListener('touchcancel', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    discClearAll();
+  }, { passive: false });
+  // Mouse events
+  var mouseDown = false;
+  disc.addEventListener('mousedown', function(e) {
+    e.preventDefault(); mouseDown = true; discFromXY(e.clientX, e.clientY);
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (mouseDown) discFromXY(e.clientX, e.clientY);
+  });
+  document.addEventListener('mouseup', function() {
+    if (mouseDown) { mouseDown = false; discClearAll() }
+  });
+}
+
 function bindTouchControls() {
+  // Bind A/B/Select/Start (non-direction buttons still use data-key)
   document.querySelectorAll('[data-key]').forEach(function(el) {
     var k = el.getAttribute('data-key');
+    if (k === 'up' || k === 'down' || k === 'left' || k === 'right') return; // handled by disc
     var btn = BTN[k]; if (btn === undefined) return;
     var kc = keyCodeMap[k];
     function dn(e) { e.preventDefault(); e.stopPropagation(); el.classList.add('on'); nesBtnDown(btn); fireKey('keydown',kc) }
@@ -432,6 +551,8 @@ function bindTouchControls() {
     el.addEventListener('mouseup', up);
     el.addEventListener('mouseleave', up);
   });
+  // Bind the directional disc
+  bindDisc();
 }
 // WASD
 var wasdMap = { w:38, s:40, a:37, d:39 };
@@ -476,6 +597,26 @@ function loadState() {
 }
 
 // ================================================================
+//  INFINITE LIVES — simple toggle, pokes common life addresses
+// ================================================================
+var infLivesOn = false;
+// Common NES life/health addresses (covers many games)
+var LIFE_ADDRS = [0x0075, 0x006F, 0x0070, 0x0700, 0x0704, 0x07F8, 0x0058, 0x0352, 0x0398];
+
+function applyInfLives() {
+  if (!browser || !browser.nes || !browser.nes.cpu) return;
+  var mem = browser.nes.cpu.mem;
+  for (var i = 0; i < LIFE_ADDRS.length; i++) {
+    mem[LIFE_ADDRS[i]] = 0x09; // 9 lives
+  }
+  // Also try to set a high value for HP-type addresses
+  var HP_ADDRS = [0x0704, 0x006C, 0x00A0, 0x04AC];
+  for (var i = 0; i < HP_ADDRS.length; i++) {
+    mem[HP_ADDRS[i]] = 0xFF;
+  }
+}
+
+// ================================================================
 //  INIT
 // ================================================================
 bindTouchControls();
@@ -495,6 +636,21 @@ document.getElementById('fileInput').addEventListener('change', function(e) { va
 
 document.getElementById('saveBtn').addEventListener('click', function() { saveState(); showTopbar() });
 document.getElementById('loadBtn').addEventListener('click', function() { loadState(); showTopbar() });
+// Infinite lives toggle
+document.getElementById('infLivesBtn').addEventListener('click', function() {
+  infLivesOn = !infLivesOn;
+  this.style.borderColor = infLivesOn ? '#9bbc0f' : 'rgba(241,196,15,0.5)';
+  this.style.color = infLivesOn ? '#9bbc0f' : '#ccc';
+  this.style.background = infLivesOn ? 'rgba(155,188,15,0.15)' : 'transparent';
+  toast(infLivesOn ? '♾️ 无限命 ON' : '♾️ 无限命 OFF');
+  showTopbar();
+});
+
+// Apply cheats every frame (~60fps)
+setInterval(function() {
+  if (infLivesOn && browser && browser.nes && !paused) applyInfLives();
+}, 16);
+
 document.getElementById('centerTap').addEventListener('click', function() { showTopbar() });
 document.getElementById('backBtn').addEventListener('click', function() {
   if (browser) { try { browser.destroy() } catch(e) {} browser = null }
