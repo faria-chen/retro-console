@@ -22,6 +22,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 #menu.show{display:flex}
 #menu h2{font-size:0.7rem;color:#9bbc0f;margin-bottom:20px;text-shadow:0 0 10px rgba(155,188,15,0.3)}
 .drop-zone{width:min(90%,420px);min-height:180px;border:3px dashed #333;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px 20px;transition:all 0.2s;cursor:pointer;position:relative}
+.drop-zone .icon+.txt,.drop-zone .txt+.txt{margin-top:14px}
+@supports(gap:1px){.drop-zone .icon+.txt,.drop-zone .txt+.txt{margin-top:0}}
 .drop-zone.over{border-color:#9bbc0f;background:rgba(155,188,15,0.06);transform:scale(1.02)}
 .drop-zone .icon{font-size:2.2rem}
 .drop-zone .txt{color:#666;font-size:0.45rem;line-height:2.2;text-align:center}
@@ -33,7 +35,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 .recent{width:min(90%,420px);margin-top:18px}
 .recent h3{font-size:0.45rem;color:#666;margin-bottom:10px}
 .rom-list{display:flex;flex-direction:column;gap:8px;max-height:160px;overflow-y:auto}
+.rom-list .rom-item+.rom-item{margin-top:8px}
+@supports(gap:1px){.rom-list .rom-item+.rom-item{margin-top:0}}
 .rom-item{background:#1a1a1a;border:2px solid #333;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.15s}
+.rom-item .ri{margin-right:12px}
+@supports(gap:1px){.rom-item .ri{margin-right:0}}
 .rom-item:active,.rom-item:hover{background:#222;border-color:#9bbc0f;transform:scale(0.98)}
 .rom-item .ri{font-size:1.2rem}
 .rom-item .rn{font-size:0.42rem;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
@@ -180,6 +186,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.92);
   display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;
 }
+.rotate-hint .icon+.txt,.rotate-hint .txt+p{margin-top:16px}
+@supports(gap:1px){.rotate-hint .icon+.txt,.rotate-hint .txt+p{margin-top:0}}
 .rotate-hint.show{display:flex}
 .rotate-hint .icon{font-size:2.5rem;animation:rot-phone 2s ease-in-out infinite}
 .rotate-hint .txt{color:#888;font-size:0.4rem;text-align:center;line-height:2}
@@ -245,7 +253,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
     <button class="back" id="backBtn">◀ MENU</button>
     <div class="info" id="romName"></div>
     <div style="display:flex;gap:6px">
-      <button class="back" id="infLivesBtn" style="border-color:rgba(241,196,15,0.5)">♾️ ∞命</button>
+      <button class="back" id="infLivesBtn" style="border-color:rgba(241,196,15,0.5);margin-right:6px">♾️ ∞命</button>
       <button class="back" id="saveBtn" style="border-color:rgba(46,204,113,0.5)">💾 SAVE</button>
       <button class="back" id="loadBtn" style="border-color:rgba(52,152,219,0.5)">📂 LOAD</button>
     </div>

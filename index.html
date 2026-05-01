@@ -21,11 +21,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Pr
 #menu.show{display:flex}
 #menu h2{font-size:0.8rem;color:#9bbc0f;margin-bottom:24px;text-shadow:0 0 10px rgba(155,188,15,0.3)}
 .glist{display:flex;flex-direction:column;gap:12px;width:min(90%,360px)}
+.glist .gitem+.gitem{margin-top:12px}
+@supports(gap:1px){.glist .gitem+.gitem{margin-top:0}}
 .gitem{
   background:#1a1a1a;border:2px solid #333;border-radius:10px;
   padding:16px 18px;display:flex;align-items:center;gap:16px;
   cursor:pointer;transition:all 0.15s;
 }
+.gitem .gi{margin-right:16px}
+@supports(gap:1px){.gitem .gi{margin-right:0}}
 .gitem:active,.gitem:hover{background:#222;border-color:#9bbc0f;transform:scale(0.98)}
 .gitem .gi{font-size:1.6rem;width:40px;text-align:center}
 .gitem .gt{font-size:0.5rem;color:#ccc;line-height:1.6}
@@ -59,7 +63,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#111;font-family:'Pr
 
 /* Action buttons */
 .ab{display:flex;flex-direction:column;align-items:center;gap:8px}
+.ab .btn+.btn{margin-top:8px}
+@supports(gap:1px){.ab .btn+.btn{margin-top:0}}
 .ab-top{display:flex;gap:12px}
+.ab-top .btn+.btn{margin-left:12px}
+@supports(gap:1px){.ab-top .btn+.btn{margin-left:0}}
 .btn{
   border:none;font-family:inherit;cursor:pointer;color:#fff;
   box-shadow:0 4px 0 rgba(0,0,0,0.4);transition:transform 0.05s,box-shadow 0.05s;
